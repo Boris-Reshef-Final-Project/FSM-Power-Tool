@@ -10,6 +10,7 @@ int main()
     std::string SourcePath, DestPath;
 	
 	//C:/Final Project/Parser Prototype 1/Parser/Parser/btat.txt
+	
 
 	std::ifstream source("E:/Final Project/Project Files/bbsse.kis");    
 	std::ofstream dest("E:/Final Project/Project Files/dest.txt");    
