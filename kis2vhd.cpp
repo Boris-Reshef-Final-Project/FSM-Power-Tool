@@ -4,27 +4,39 @@
 
 using namespace std;
 
-std::ifstream source("E:/Final Project/Project Files/bbsse.kis");    
-std::ofstream dest("E:/Final Project/Project Files/dest.txt");    
 
 
 
 
+int KissFiles2Vhd(int i,std::ifstream &source,std::ofstream &dest);
+void MakeInputVector(std::ifstream &source,std::ofstream &dest);
+void MakeTypeState (std::ifstream &source,std::ofstream &dest); 
+void FSM2Process(std::ifstream &source,std::ofstream &dest);
+int GetNumFromUser();
 
-
-int KissFiles2Vhd();
-void MakeInputVector();
-void MakeTypeState (); 
-void FSM2Process();
 
 int main(){
 
 // Get destination and source files from user
 
+// Open source and dest files
+std::ifstream source("E:/Final Project/Project Files/bbsse.kis");    
+std::ofstream dest("E:/Final Project/Project Files/dest.vhd");    
 
 
-//Main Parser function - Convert Kiss to Vhd
-KissFiles2Vhd() ;
+	if (!source || !dest) {
+
+		std::cerr << "Error opening files!" << std::endl;
+		return 1;   
+	}
+
+    int i=2;
+    i=GetNumFromUser();
+
+
+
+    //Main Parser function - Convert Kiss to Vhd
+    KissFiles2Vhd(i,source,dest) ;
 
 
 
@@ -32,7 +44,7 @@ KissFiles2Vhd() ;
 }
 
 
-int KissFiles2Vhd() 
+int KissFiles2Vhd(int i,std::ifstream &source,std::ofstream &dest) 
 {   
     std::string SourcePath, DestPath;
 	
@@ -51,29 +63,42 @@ int KissFiles2Vhd()
          //                     writing all the librarys to destination file.
   //##################################################################################################################   
 
-dest << "library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.std_logic_arith.all;\nuse ieee.std_logic_unsigned.all;\n\nentity state_machine is\nport(\nclk\t\t\t:in std_logic;\nrst\t\t\t:in std_logic;\n";
+dest << "library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.std_logic_arith.all;\nuse ieee.std_logic_unsigned.all;\n\nentity state_machine is\nport(\nclk\t\t\t\t:in std_logic_vector("<<i-1<<" downto 0);\nrst\t\t\t\t:in std_logic;\n";
 /*
 if (source >> word ) {
 		dest << word << std::endl;
 	}
 */
 
-MakeInputVector();
+MakeInputVector(source,dest);
 
 dest << ");\nend entity state_machine;\n\narchitecture arc_state_machine of state_machine is\n"; 
 
 source.clear();
 source.seekg(0, ios::beg);
 
-MakeTypeState ();// type state is (st0, st1, st2,..., st12);
+MakeTypeState (source,dest);// type state is (st0, st1, st2,..., st12);
                  // signal st : state;
+
+int j;
+for (j=0;j<i;j++) {
+dest << "cfsm"<<j<<": process(clk("<<j<<"), rst)\nbegin\n\nif(rst = '1') then\nst\t<=\tst0;\nelsif falling_edge(clk("<<j<<")) then\ncase st is\n";
+
+
 
 //####################################################################################################################
 //                     FSM To Process. -- Sub function to the main Kiss2Vhd Function.
 //##################################################################################################################   
 
-FSM2Process();
+source.clear();
+source.seekg(0, ios::beg);
 
+FSM2Process(source,dest);
+
+
+dest<< "end case;\nend if;\nend process cfsm"<<j<<";\n\n";
+
+}
 //####################################################################################################################
 //                     Closing Files.
 //##################################################################################################################   
@@ -87,7 +112,7 @@ return 0;
      
 }
 
-void MakeInputVector(){
+void MakeInputVector(std::ifstream &source,std::ofstream &dest){
 if (source.is_open() && dest.is_open()) {
         string line;
         while (getline(source, line)) {
@@ -99,7 +124,7 @@ if (source.is_open() && dest.is_open()) {
                 size_t startIndex = i_pos + 3; // Skip ".i "
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
-                int number = stoi(numberString);
+                int number = stoi(numberString)-1;
                 dest << "inputs\t\t\t: in\tstd_logic_vector(" << number << " downto 0);" << endl;
             }
             
@@ -108,7 +133,7 @@ if (source.is_open() && dest.is_open()) {
                 size_t startIndex = o_pos + 3; // Skip ".o "
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
-                int number = stoi(numberString);
+                int number = stoi(numberString)-1;
                 dest << "outputs\t\t\t: out\tstd_logic_vector(" << number << " downto 0);" << endl;
             }
         }
@@ -117,7 +142,7 @@ if (source.is_open() && dest.is_open()) {
 }
 }
 
-void MakeTypeState (){
+void MakeTypeState (std::ifstream &source,std::ofstream &dest){
 
 
  if (source.is_open() && dest.is_open()) {
@@ -153,7 +178,7 @@ void MakeTypeState (){
 }
 
 
-void FSM2Process(){
+void FSM2Process(std::ifstream &source,std::ofstream &dest){
 
 
 
@@ -164,4 +189,10 @@ void FSM2Process(){
     
 }
 
+int GetNumFromUser(){
+int i;
+ cout << "insert amount of cfsm's"<< endl;
+cin>>i;
+return i;
 
+}
