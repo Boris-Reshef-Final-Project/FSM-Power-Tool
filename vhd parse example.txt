@@ -1,0 +1,42 @@
+taken from the first few lines of bbsse.kis
+
+the process content:
+-----------------------
+ST_CASE_0: case st is
+
+    when st0 =>
+
+        case x is
+            when "0------" =>
+                st <= st0;
+                y  <= "0000000";
+            when "10----0" =>
+                st <= st1;
+                y  <= "0011000";
+            when "10----1" =>
+                st <= st1;
+                y  <= "0001000";
+            when "11----0" =>
+                st <= st11;
+                y  <= "0011010";
+            when "11----1" =>
+                st <= st11;
+                y  <= "0001010";
+            when others =>
+            NULL;
+        end case;
+
+    when st1 =>
+    {...}
+    end case;
+
+    .
+    .
+    .
+
+    when others =>
+        (needs to be handled diff if this is cfsm or just one machine)
+                
+
+
+end case ST_CASE_0;
