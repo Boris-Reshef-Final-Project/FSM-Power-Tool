@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -9,6 +10,16 @@ void MakeIODecleration(ifstream &source, ofstream &dest);
 void MakeTypeState(ifstream &source, ofstream &dest);
 void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest);
 int GetNumFromUser();
+void Fill_state_product(ifstream &source, ofstream &dest);
+
+struct state_product {
+    string x;
+    string cs;
+    string ns;
+    string y;
+};
+
+vector <state_product> stateProducts;
 
 int main()
 {
@@ -58,6 +69,14 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
                                  // signal st : state;
+cout << "Now starting Fill_state_product"<< endl;
+    Fill_state_product(source, dest);
+cout << "Now Finished Fill_state_product"<< endl;
+
+
+for (const auto& sp : stateProducts) {
+    dest << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ", y: " << sp.y << endl;
+}
 
     int j;
     for (j = 0; j < CfsmAmount; j++)
@@ -165,4 +184,31 @@ int GetNumFromUser() // Get a number from user
     cout << "insert amount of cfsm's" << endl;
     cin >> i;
     return i;
+}
+
+void Fill_state_product(ifstream &source, ofstream &dest) {
+     if (source.is_open()) 
+    {
+        string line;
+        while (getline(source, line)) 
+        {
+            // Skip lines that start with a period
+            if (line[0] == '.')
+                continue;
+            
+            // Create a new state_product instance
+            state_product sp;
+            sp.x = line.substr(0, 7);
+            sp.cs = line.substr(8, 3);
+            sp.ns = line.substr(12, 3);
+            sp.y = line.substr(16);
+            
+            // Add the state_product instance to the vector
+            stateProducts.push_back(sp);
+            
+            // Print the contents of the state_product instance
+            cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ", y: " << sp.y << endl;
+        }
+       
+    }
 }
