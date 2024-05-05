@@ -4,10 +4,10 @@
 
 using namespace std;
 
-int KissFiles2Vhd(int i, ifstream &source, ofstream &dest);
+int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
 void MakeIODecleration(ifstream &source, ofstream &dest);
 void MakeTypeState(ifstream &source, ofstream &dest);
-void FSM2Process(ifstream &source, ofstream &dest);
+void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest);
 int GetNumFromUser();
 
 int main()
@@ -32,23 +32,23 @@ int main()
         return 1;
     }
 
-    int i = 2;
-    i = GetNumFromUser();
+    int CfsmAmount = 2;
+    CfsmAmount = GetNumFromUser();
 
-    KissFiles2Vhd(i, source, dest); // Preform the parsing process
+    KissFiles2Vhd(CfsmAmount, source, dest); // Preform the parsing process
 
     return 0;
 }
 
 
 
-int KissFiles2Vhd(int i, ifstream &source, ofstream &dest) // Main Parser function - Convert Kiss to Vhd
+int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Parser function - Convert Kiss to Vhd
 {
     // ####################################################################################################################
     //                      writing all the librarys to destination file.
     // ####################################################################################################################
 
-    dest << "library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.std_logic_arith.all;\nuse ieee.std_logic_unsigned.all;\n\nentity state_machine is\nport(\n\trst\t\t: in\tstd_logic;\n\tclk\t\t: in\tstd_logic_vector(" << i - 1 << " downto 0);\n";
+    dest << "library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.std_logic_arith.all;\nuse ieee.std_logic_unsigned.all;\n\nentity state_machine is\nport(\n\trst\t\t: in\tstd_logic;\n\tclk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);\n";
     MakeIODecleration(source, dest);
 
     dest << ");\nend entity state_machine;\n\narchitecture arc_state_machine of state_machine is\n";
@@ -60,7 +60,7 @@ int KissFiles2Vhd(int i, ifstream &source, ofstream &dest) // Main Parser functi
                                  // signal st : state;
 
     int j;
-    for (j = 0; j < i; j++)
+    for (j = 0; j < CfsmAmount; j++)
     {
         dest << "cfsm" << j << ": process(clk(" << j << "), rst)\nbegin\n\nif(rst = '1') then\nst\t<=\tst0;\nelsif falling_edge(clk(" << j << ")) then\ncase st is\n";
 
@@ -71,7 +71,7 @@ int KissFiles2Vhd(int i, ifstream &source, ofstream &dest) // Main Parser functi
         source.clear();
         source.seekg(0, ios::beg);
 
-        FSM2Process(source, dest);
+        FSM2Process(CfsmAmount,source, dest);
 
         dest << "end case;\nend if;\nend process cfsm" << j << ";\n\n";
     }
@@ -154,7 +154,7 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
     }
 }
 
-void FSM2Process(ifstream &source, ofstream &dest)
+void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest)
 {
 
 }
