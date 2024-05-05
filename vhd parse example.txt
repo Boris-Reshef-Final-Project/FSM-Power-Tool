@@ -22,8 +22,7 @@ ST_CASE_0: case st is
             when "11----1" =>
                 st <= st11;
                 y  <= "0001010";
-            when others =>
-            NULL;
+            when others => NULL;
         end case;
 
     when st1 =>
@@ -34,9 +33,32 @@ ST_CASE_0: case st is
     .
     .
 
-    when others =>
-        (needs to be handled diff if this is cfsm or just one machine)
+    when others => NULL;
                 
 
 
 end case ST_CASE_0;
+
+
+-------------------------------------------------------------------------
+
+fileA - source file
+
+struct state_product{
+    string x;
+    string cs;
+    string ns;
+    string y;
+}
+
+state_product source_FSM[P]; //P is the number extracted from (.p #) in the first few lines of the kis file
+
+FSM_states = {"st1", "st2", "st3", "st4"}; // ALL the states
+cfsm[0] = {"st1", "st2"};
+cfsm[1] = {"st3", "st4"};
+
+if(source_FSM[m].ns not in cfsm[k])
+    then add the "z" line to turn on the correct cfsm and turn off the current cfsm's clock
+
+OptimizeFSM - input:  (N number of states, source FSM file)
+              output: (N cfsm files, cfsm state list array)
