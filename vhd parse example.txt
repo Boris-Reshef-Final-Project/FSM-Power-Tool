@@ -1,0 +1,64 @@
+taken from the first few lines of bbsse.kis
+
+the process content:
+-----------------------
+ST_CASE_0: case st is
+
+    when st0 =>
+
+        case x is
+            when "0------" =>
+                st <= st0;
+                y  <= "0000000";
+            when "10----0" =>
+                st <= st1;
+                y  <= "0011000";
+            when "10----1" =>
+                st <= st1;
+                y  <= "0001000";
+            when "11----0" =>
+                st <= st11;
+                y  <= "0011010";
+            when "11----1" =>
+                st <= st11;
+                y  <= "0001010";
+            when others => NULL;
+        end case;
+
+    when st1 =>
+    {...}
+    end case;
+
+    .
+    .
+    .
+
+    when others => NULL;
+                
+
+
+end case ST_CASE_0;
+
+
+-------------------------------------------------------------------------
+
+fileA - source file
+
+struct state_product{
+    string x;
+    string cs;
+    string ns;
+    string y;
+}
+
+state_product source_FSM[P]; //P is the number extracted from (.p #) in the first few lines of the kis file
+
+FSM_states = {"st1", "st2", "st3", "st4"}; // ALL the states
+cfsm[0] = {"st1", "st2"}; // cfsm is an array of an array of strings
+cfsm[1] = {"st3", "st4"};
+
+if(source_FSM[m].ns not in cfsm[k])
+    then add the "z" line to turn on the correct cfsm and turn off the current cfsm's clock
+
+OptimizeFSM - input:  (N number of states, source FSM file)
+              output: (N cfsm files, cfsm state list array)
