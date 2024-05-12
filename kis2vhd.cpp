@@ -13,7 +13,7 @@ void MakeTypeState(ifstream &source, ofstream &dest);
 void FSM2Process(int j, ofstream &dest);
 void Fill_state_product(ifstream &source, ofstream &dest);
 bool isStringInVector(const string& str, const vector<string>& vec);
-int find_cfsm(string state);
+int  find_cfsm(string state);
 
 struct state_product {
     string x;
@@ -41,7 +41,7 @@ int main()
 
     // Open source and dest files
     ifstream source(ProjectFolder + "/" + SourceFile);
-    ofstream dest(ProjectFolder + "/dest.vhd");
+    ofstream dest(ProjectFolder + "/state_machine.vhd");
 
     if (!source || !dest)
     {
@@ -50,8 +50,8 @@ int main()
     }
 
     int CfsmAmount = 2;
-    cout << "insert amount of cfsm's :" << endl;
-    cin >> CfsmAmount;
+    //cout << "insert amount of cfsm's :" << endl;
+    //cin >> CfsmAmount;
 
     // This is an assignment for prototyping. delete later!
     cfsm.push_back({"st0", "st1", "st2", "st3", "st4", "st5", "st6"});
@@ -86,6 +86,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     dest << ");" << endl;
     dest << "end entity state_machine;" << endl;
     dest << "\narchitecture arc_state_machine of state_machine is" << endl;
+    dest << "\tsignal z\t\t: std_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
 
     source.clear();
     source.seekg(0, ios::beg); // Return to the beginning of the file
@@ -104,22 +105,21 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     int j;
     for (j = 0; j < CfsmAmount; j++)
     {
-        dest << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst)" << endl;
-        dest << "\t\t" << "begin\n\n";
-        dest << "\t" << "if(rst = '1') then"<< endl;
-        dest << "\t\t" << "st\t<=\tst0;" << endl;
-        dest << "\t" << "elsif falling_edge(clk(" << j << ")) then" << endl;
+        dest << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
+        dest << "\t\t" << "if(rst = '1') then"<< endl;
+        dest << "\t\t\t" << "st\t<=\tst0;" << endl;
+        dest << "\t\t\t" << "z <= (" << find_cfsm("st0") << " => '1', others => '0');" << endl;
+        dest << "\t\t" << "elsif falling_edge(clk(" << j << ")) then" << endl;
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
 
         FSM2Process(j, dest);
 
-        dest << "\t\t " << "end case;" << endl;
-        dest << "\t" << "end if;" << endl;
-        dest << "end process cfsm" << j << ";\n\n";
+        dest << "\t\t" << "end if;" << endl;
+        dest << "\t" <<"end process cfsm" << j << ";\n\n";
     }
-
+    dest << "end arc_state_machine;" << endl;
     return 0;
 }
 
@@ -152,10 +152,9 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
                 int number = stoi(numberString) - 1;
-                dest << "\t" << "y\t\t: out\tstd_logic_vector(" << number << " downto 0);" << endl;
+                dest << "\t" << "y\t\t: out\tstd_logic_vector(" << number << " downto 0)" << endl;
             }
         }
-        // Close files
     }
 }
 
@@ -163,7 +162,6 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
 
 void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the enum type state
 {
-
     if (source.is_open() && dest.is_open())
     {
         string line;
@@ -202,31 +200,31 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
 
 void FSM2Process(int j, ofstream &dest)
 {
-    dest << "\t\t" << "case st is" << endl;
+    dest << "\t\t\t" << "case st is" << endl;
     for(int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
     {
-        dest << "\t\t\t" << "when " << cfsm[j][i] << " =>\n\n";
-        dest << "\t\t\t\t" << "case x is" << endl;
+        dest << "\t\t\t\t" << "when " << cfsm[j][i] << " =>\n\n";
+        dest << "\t\t\t\t\t" << "case x is" << endl;
         for (int k = 0; k < stateProducts.size(); k++) // Iterate over all the state_products
         {
             if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
             {
-                dest << "\t\t\t\t\t" << "when \"" << stateProducts[k].x << "\" =>" << endl;
-                dest << "\t\t\t\t\t\t" << "st <= " << stateProducts[k].ns << ";" << endl;
-                dest << "\t\t\t\t\t\t" << "y <= \"" << stateProducts[k].y << "\";" << endl;
+                dest << "\t\t\t\t\t\t" << "when \"" << stateProducts[k].x << "\" =>" << endl;
+                dest << "\t\t\t\t\t\t\t" << "st <= " << stateProducts[k].ns << ";" << endl;
+                dest << "\t\t\t\t\t\t\t" << "y <= \"" << stateProducts[k].y << "\";" << endl;
                 if(!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                 {
-                    dest << "\t\t\t\t\t\t" << "z["<< j <<"] <= '0';\n"; // Disable current cfsm clock
+                    dest << "\t\t\t\t\t\t\t" << "z("<< j <<") <= '0';" << endl; // Disable current cfsm clock
                     int z = find_cfsm(stateProducts[k].ns);
-                    dest << "\t\t\t\t\t\t" << "z["<< z <<"] <= '0';\n"; // Enable next cfsm clock
+                    dest << "\t\t\t\t\t\t\t" << "z("<< z <<") <= '1';" << endl; // Enable next cfsm clock
                 }
             }
         }
-        dest << "\t\t\t\t\t" << "when others => NULL;" << endl;
-        dest << "\t\t\t\t" << "end case;\n\n";
+        dest << "\t\t\t\t\t\t" << "when others => NULL;" << endl;
+        dest << "\t\t\t\t\t" << "end case;\n\n";
     }
-    dest << "when others => NULL;" << endl;
-    dest << "\t" << "end case;" << endl;
+    dest << "\t\t\t\t" << "when others => NULL;" << endl;
+    dest << "\t\t\t" << "end case;" << endl;
 }
 
 
