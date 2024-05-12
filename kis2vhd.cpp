@@ -2,15 +2,18 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <sstream>
 
 using namespace std;
 
-int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
+int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
 void MakeIODecleration(ifstream &source, ofstream &dest);
 void MakeTypeState(ifstream &source, ofstream &dest);
-void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest);
+void FSM2Process(int j, ofstream &dest);
 void Fill_state_product(ifstream &source, ofstream &dest);
+bool isStringInVector(const string& str, const vector<string>& vec);
+int find_cfsm(string state);
 
 struct state_product {
     string x;
@@ -20,6 +23,8 @@ struct state_product {
 };
 
 vector<state_product> stateProducts;
+vector<vector<string>> cfsm; // Vector to store the states of each cfsm
+
 
 // Create a Global state_product instance
         state_product sp;
@@ -47,6 +52,10 @@ int main()
     int CfsmAmount = 2;
     cout << "insert amount of cfsm's :" << endl;
     cin >> CfsmAmount;
+
+    // This is an assignment for prototyping. delete later!
+    cfsm.push_back({"st0", "st1"});
+    cfsm.push_back({"st2", "st3"});
 
     KissFiles2Vhd(CfsmAmount, source, dest); // Preform the parsing process
 
@@ -95,7 +104,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
 
-        FSM2Process(CfsmAmount,source, dest);
+        FSM2Process(j, dest);
 
         dest << "end case;\nend if;\nend process cfsm" << j << ";\n\n";
     }
@@ -180,9 +189,31 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
 
 
 
-void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest)
+void FSM2Process(int j, ofstream &dest)
 {
-
+    for(int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
+    {
+        dest << "when " << cfsm[j][i] << " =>\n\n";
+        dest << "\tcase x is\n";
+        for (int k = 0; k < stateProducts.size(); k++) // Iterate over all the state_products
+        {
+            if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
+            {
+                dest << "\t\twhen \"" << stateProducts[k].x << "\" =>\n";
+                dest << "\t\t\tst <= " << stateProducts[k].ns << ";\n";
+                dest << "\t\t\ty <= \"" << stateProducts[k].y << "\";\n";
+                if(!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
+                {
+                    dest << "\t\t\tz["<< j <<"] <= '0';\n"; // Disable current cfsm clock
+                    int z = find_cfsm(stateProducts[k].ns);
+                    dest << "\t\t\tz["<< z <<"] <= '0';\n"; // Enable next cfsm clock
+                }
+            }
+        }
+        dest << "end case;\n\n";
+    }
+    dest << "when others => NULL;\n";
+    dest << "end case;\n";
 }
 
 
@@ -215,4 +246,27 @@ void Fill_state_product(ifstream &source, ofstream &dest) {
         cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
        
     }
+}
+
+
+// function to check if a string is in a vector of strings
+bool isStringInVector(const string& str, const vector<string>& vec) 
+{
+    return find(vec.begin(), vec.end(), str) != vec.end();
+}
+
+
+
+// function to find which cfsm the state belongs to
+int find_cfsm(string state)
+{
+    for(int i = 0; i < cfsm.size(); i++)
+    {
+        if(isStringInVector(state, cfsm[i]))
+        {
+            return i;
+        }
+    }
+    cerr << "Error: state not found in any cfsm" << endl;
+    return -1;
 }
