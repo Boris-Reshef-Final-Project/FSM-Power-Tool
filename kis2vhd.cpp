@@ -8,25 +8,21 @@ using namespace std;
 int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
 void MakeIODecleration(ifstream &source, ofstream &dest);
 void MakeTypeState(ifstream &source, ofstream &dest);
-void FSM2Process(int CfsmAmount, ifstream &source, ofstream &dest);
-int GetNumFromUser();
+void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest);
 void Fill_state_product(ifstream &source, ofstream &dest);
 
-struct state_product
-{
+struct state_product {
     string x;
     string cs;
     string ns;
     string y;
 };
 
-vector<state_product> stateProducts;
-
+vector <state_product> stateProducts;
 
 
 int main()
 {
-
     string ProjectFolder;
     string SourceFile;
     // Get destination and source files from user
@@ -41,20 +37,22 @@ int main()
 
     if (!source || !dest)
     {
-
         cerr << "Error opening files!" << endl;
         return 1;
     }
 
-    int CfsmAmount = 2; // Default value
-    CfsmAmount = GetNumFromUser();
+    int CfsmAmount = 2;
+    cout << "insert amount of cfsm's :" << endl;
+    cin >> CfsmAmount;
 
     KissFiles2Vhd(CfsmAmount, source, dest); // Preform the parsing process
 
+    // Closing files.
+    source.close();
+    dest.close();
+
     return 0;
 }
-
-
 
 
 
@@ -70,15 +68,13 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     dest << ");\nend entity state_machine;\n\narchitecture arc_state_machine of state_machine is\n";
 
     source.clear();
-    source.seekg(0, ios::beg);
+    source.seekg(0, ios::beg); // Return to the beginning of the file
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
                                  // signal st : state;
-    cout << "Now starting Fill_state_product" << endl;
-    source.clear();
-    source.seekg(0, ios::beg);
+    cout << "Now starting Fill_state_product"<< endl;
     Fill_state_product(source, dest);
-    cout << "Now Finished Fill_state_product" << endl;
+    cout << "Now Finished Fill_state_product"<< endl;
 
     int j;
     for (j = 0; j < CfsmAmount; j++)
@@ -90,23 +86,19 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
         // ####################################################################################################################
 
         source.clear();
-        source.seekg(0, ios::beg);
+        source.seekg(0, ios::beg); // Return to the beginning of the file
 
-        FSM2Process(CfsmAmount, source, dest);
+        FSM2Process(CfsmAmount,source, dest);
 
         dest << "end case;\nend if;\nend process cfsm" << j << ";\n\n";
     }
-
-    // End of function, Closing files.
-    source.close();
-    dest.close();
 
     return 0;
 }
 
 
 
-void MakeIODecleration(ifstream &source, ofstream &dest) //
+void MakeIODecleration(ifstream &source, ofstream &dest) // 
 {
     if (source.is_open() && dest.is_open())
     {
@@ -139,8 +131,6 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
         // Close files
     }
 }
-
-
 
 
 
@@ -183,46 +173,36 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
 
 
 
-
-
-void FSM2Process(int CfsmAmount, ifstream &source, ofstream &dest)
+void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest)
 {
-}
 
-int GetNumFromUser() // Get a number from user
-{
-    int i;
-    cout << "insert amount of cfsm's" << endl;
-    cin >> i;
-    return i;
 }
 
 
 
-
-void Fill_state_product(ifstream &source, ofstream &dest)
-{
-    if (source.is_open())
+void Fill_state_product(ifstream &source, ofstream &dest) {
+     if (source.is_open()) 
     {
         string line;
-        while (getline(source, line))
+        while (getline(source, line)) 
         {
             // Skip lines that start with a period
             if (line[0] == '.')
                 continue;
-
+            
             // Create a new state_product instance
             state_product sp;
             sp.x = line.substr(0, 7);
             sp.cs = line.substr(8, 3);
             sp.ns = line.substr(12, 3);
             sp.y = line.substr(16);
-
+            
             // Add the state_product instance to the vector
             stateProducts.push_back(sp);
-
+            
             // Print the contents of the state_product instance
             cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ", y: " << sp.y << endl;
         }
+       
     }
 }
