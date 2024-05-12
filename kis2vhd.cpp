@@ -74,9 +74,6 @@ cout << "Now starting Fill_state_product"<< endl;
 cout << "Now Finished Fill_state_product"<< endl;
 
 
-for (const auto& sp : stateProducts) {
-    dest << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ", y: " << sp.y << endl;
-}
 
     int j;
     for (j = 0; j < CfsmAmount; j++)
