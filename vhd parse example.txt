@@ -54,7 +54,7 @@ struct state_product{
 state_product source_FSM[P]; //P is the number extracted from (.p #) in the first few lines of the kis file
 
 FSM_states = {"st1", "st2", "st3", "st4"}; // ALL the states
-cfsm[0] = {"st1", "st2"};
+cfsm[0] = {"st1", "st2"}; // cfsm is an array of an array of strings
 cfsm[1] = {"st3", "st4"};
 
 if(source_FSM[m].ns not in cfsm[k])
