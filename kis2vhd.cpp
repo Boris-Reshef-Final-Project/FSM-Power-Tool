@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -18,8 +19,10 @@ struct state_product {
     string y;
 };
 
-vector <state_product> stateProducts;
+vector<state_product> stateProducts;
 
+// Create a Global state_product instance
+        state_product sp;
 
 int main()
 {
@@ -185,28 +188,31 @@ void FSM2Process(int CfsmAmount,ifstream &source, ofstream &dest)
 
 
 void Fill_state_product(ifstream &source, ofstream &dest) {
-     if (source.is_open()) 
-    {
-        string line;
-        while (getline(source, line)) 
-        {
-            // Skip lines that start with a period
-            if (line[0] == '.')
-                continue;
-            
-            // Create a new state_product instance
-            state_product sp;
-            sp.x = line.substr(0, 7);
-            sp.cs = line.substr(8, 3);
-            sp.ns = line.substr(12, 3);
-            sp.y = line.substr(16);
-            
-            // Add the state_product instance to the vector
-            stateProducts.push_back(sp);
-            
-            // Print the contents of the state_product instance
-            cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ", y: " << sp.y << endl;
+    if (!source.is_open()) {
+        cerr << "Error: Unable to open source file." << endl;
+        return;
+    }
+
+    string line;
+    while (getline(source, line)) {
+        // Skip lines that start with a period or are empty
+        if (line.empty() || line[0] == '.')
+            continue;
+
+        
+        
+        // Extract fields from the line
+        istringstream iss(line);
+        if (!(iss >> sp.x >> sp.cs >> sp.ns >> sp.y)) {
+            cerr << "Error: Failed to parse line: " << line << endl;
+            continue;
         }
+
+        // Add the state_product instance to the vector
+        stateProducts.push_back(sp);
+
+        // Print the contents of the state_product instance
+        cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
        
     }
 }
