@@ -54,8 +54,8 @@ int main()
     cin >> CfsmAmount;
 
     // This is an assignment for prototyping. delete later!
-    cfsm.push_back({"st0", "st1"});
-    cfsm.push_back({"st2", "st3"});
+    cfsm.push_back({"st0", "st1", "st2", "st3", "st4", "st5", "st6"});
+    cfsm.push_back({"st7", "st8", "st9", "st10", "st11", "st12"});
 
     KissFiles2Vhd(CfsmAmount, source, dest); // Preform the parsing process
 
@@ -74,19 +74,28 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     //                      writing all the librarys to destination file.
     // ####################################################################################################################
 
-    dest << "library ieee;\nuse ieee.std_logic_1164.all;\nuse ieee.std_logic_arith.all;\nuse ieee.std_logic_unsigned.all;\n\nentity state_machine is\nport(\n\trst\t\t: in\tstd_logic;\n\tclk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);\n";
+    dest << "library ieee;" << endl;
+    dest << "use ieee.std_logic_1164.all;" << endl;
+    dest << "use ieee.std_logic_arith.all;" << endl;
+    dest << "use ieee.std_logic_unsigned.all;" << endl;
+    dest << "\nentity state_machine is" << endl;
+    dest << "port(" << endl;
+    dest << "\t" << "rst\t\t: in\tstd_logic;" << endl;
+    dest << "\t" << "clk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
     MakeIODecleration(source, dest);
-
-    dest << ");\nend entity state_machine;\n\narchitecture arc_state_machine of state_machine is\n";
+    dest << ");" << endl;
+    dest << "end entity state_machine;" << endl;
+    dest << "\narchitecture arc_state_machine of state_machine is" << endl;
 
     source.clear();
     source.seekg(0, ios::beg); // Return to the beginning of the file
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
                                  // signal st : state;
+    dest << "begin" << endl << endl;
                                  
     source.clear();
-    source.seekg(0, ios::beg);
+    source.seekg(0, ios::beg); // return to the beginning of the file
     
     cout << "Now starting Fill_state_product"<< endl;
     Fill_state_product(source, dest);
@@ -95,18 +104,20 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     int j;
     for (j = 0; j < CfsmAmount; j++)
     {
-        dest << "cfsm" << j << ": process(clk(" << j << "), rst)\nbegin\n\nif(rst = '1') then\nst\t<=\tst0;\nelsif falling_edge(clk(" << j << ")) then\ncase st is\n";
-
-        // ####################################################################################################################
-        //                      FSM To Process. -- Sub function to the main Kiss2Vhd Function.
-        // ####################################################################################################################
+        dest << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst)" << endl;
+        dest << "\t\t" << "begin\n\n";
+        dest << "\t" << "if(rst = '1') then"<< endl;
+        dest << "\t\t" << "st\t<=\tst0;" << endl;
+        dest << "\t" << "elsif falling_edge(clk(" << j << ")) then" << endl;
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
 
         FSM2Process(j, dest);
 
-        dest << "end case;\nend if;\nend process cfsm" << j << ";\n\n";
+        dest << "\t\t " << "end case;" << endl;
+        dest << "\t" << "end if;" << endl;
+        dest << "end process cfsm" << j << ";\n\n";
     }
 
     return 0;
@@ -131,7 +142,7 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
                 int number = stoi(numberString) - 1;
-                dest << "\tx\t\t: in\tstd_logic_vector(" << number << " downto 0);" << endl;
+                dest << "\t" << "x\t\t: in\tstd_logic_vector(" << number << " downto 0);" << endl;
             }
 
             // Handle ".o" case
@@ -141,7 +152,7 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
                 int number = stoi(numberString) - 1;
-                dest << "\ty\t\t: out\tstd_logic_vector(" << number << " downto 0);" << endl;
+                dest << "\t" << "y\t\t: out\tstd_logic_vector(" << number << " downto 0);" << endl;
             }
         }
         // Close files
@@ -169,7 +180,7 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
                 int number = stoi(numberString);
 
                 // Write type declaration
-                dest << "type state is (";
+                dest << "\t" << "type state is (";
                 for (int i = 0; i < number; ++i)
                 {
                     dest << "st" << i;
@@ -181,7 +192,7 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
                 dest << ");" << endl;
 
                 // Write signal declaration
-                dest << "signal st : state;" << endl;
+                dest << "\tsignal st : state;" << endl;
             }
         }
     }
@@ -191,29 +202,31 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
 
 void FSM2Process(int j, ofstream &dest)
 {
+    dest << "\t\t" << "case st is" << endl;
     for(int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
     {
-        dest << "when " << cfsm[j][i] << " =>\n\n";
-        dest << "\tcase x is\n";
+        dest << "\t\t\t" << "when " << cfsm[j][i] << " =>\n\n";
+        dest << "\t\t\t\t" << "case x is" << endl;
         for (int k = 0; k < stateProducts.size(); k++) // Iterate over all the state_products
         {
             if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
             {
-                dest << "\t\twhen \"" << stateProducts[k].x << "\" =>\n";
-                dest << "\t\t\tst <= " << stateProducts[k].ns << ";\n";
-                dest << "\t\t\ty <= \"" << stateProducts[k].y << "\";\n";
+                dest << "\t\t\t\t\t" << "when \"" << stateProducts[k].x << "\" =>" << endl;
+                dest << "\t\t\t\t\t\t" << "st <= " << stateProducts[k].ns << ";" << endl;
+                dest << "\t\t\t\t\t\t" << "y <= \"" << stateProducts[k].y << "\";" << endl;
                 if(!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                 {
-                    dest << "\t\t\tz["<< j <<"] <= '0';\n"; // Disable current cfsm clock
+                    dest << "\t\t\t\t\t\t" << "z["<< j <<"] <= '0';\n"; // Disable current cfsm clock
                     int z = find_cfsm(stateProducts[k].ns);
-                    dest << "\t\t\tz["<< z <<"] <= '0';\n"; // Enable next cfsm clock
+                    dest << "\t\t\t\t\t\t" << "z["<< z <<"] <= '0';\n"; // Enable next cfsm clock
                 }
             }
         }
-        dest << "end case;\n\n";
+        dest << "\t\t\t\t\t" << "when others => NULL;" << endl;
+        dest << "\t\t\t\t" << "end case;\n\n";
     }
-    dest << "when others => NULL;\n";
-    dest << "end case;\n";
+    dest << "when others => NULL;" << endl;
+    dest << "\t" << "end case;" << endl;
 }
 
 
