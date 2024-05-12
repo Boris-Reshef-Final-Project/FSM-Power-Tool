@@ -72,6 +72,10 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
                                  // signal st : state;
+                                 
+    source.clear();
+    source.seekg(0, ios::beg);
+    
     cout << "Now starting Fill_state_product"<< endl;
     Fill_state_product(source, dest);
     cout << "Now Finished Fill_state_product"<< endl;
