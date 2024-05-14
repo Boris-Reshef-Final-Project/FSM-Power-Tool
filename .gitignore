@@ -1,4 +1,5 @@
 *.exe
 *.json
 *.kis
-*.vhd
+dest.vhd
+state_machine.vhd
