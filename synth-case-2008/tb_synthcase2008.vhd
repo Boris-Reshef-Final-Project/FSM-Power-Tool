@@ -8,12 +8,11 @@ entity tb_synthcase2008 is
 end entity tb_synthcase2008;
 
 architecture tb_arch of tb_synthcase2008 is
-    component SynthCase2008
-    end component;
 
     signal clk      : std_logic := '0';
     signal rst      : std_logic := '1';
     signal ctrl     : std_logic_vector(3 downto 0) := x"0";
+    signal data_in  : std_logic_vector(23 downto 0) := x"ABCDEF";
     signal result   : std_logic_vector(3 downto 0);
 
     type Array_Type is array (natural range <>) of std_logic_vector(3 downto 0);
@@ -29,7 +28,7 @@ begin
 
     -- Instantiate the Device Under Test (DUT)
     DUT: entity work.SynthCase2008
-    port map(clk => clk, rst => rst, ctrl => ctrl, result => result);
+    port map(clk => clk, rst => rst, ctrl => ctrl, data_in => data_in, result => result);
 
     -- Stimulus process
     stimulus_process : process

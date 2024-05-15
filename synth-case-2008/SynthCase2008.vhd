@@ -29,6 +29,7 @@ entity SynthCase2008 is
     clk    : in std_logic;
     rst    : in std_logic;
     ctrl   : in std_logic_vector(3 downto 0);
+    data_in: in std_logic_vector(23 downto 0);
     result : out std_logic_vector(3 downto 0)
   );
 end entity SynthCase2008;
@@ -43,12 +44,18 @@ begin
     elsif rising_edge(clk) then
 
       case? ctrl is
-        when "0---" => result <= x"A";
-        when "101-" => result <= x"B";
-        when "11-0" => result <= x"C";
-        when "1101" => result <= x"D";
-        when "1111" => result <= x"E";
-        when others => result <= x"F";
+        when "0---" => result <= data_in(23 downto 20);
+        when "101-" => result <= data_in(19 downto 16);
+        when "11-0" => result <= data_in(15 downto 12);
+        when "1101" => result <= data_in(11 downto 8);
+        when "1111" => result <= data_in(7 downto 4);
+        when others => result <= data_in(3 downto 0);
+        -- when "0---" => result <= x"A";
+        -- when "101-" => result <= x"B";
+        -- when "11-0" => result <= x"C";
+        -- when "1101" => result <= x"D";
+        -- when "1111" => result <= x"E";
+        -- when others => result <= x"F";
       end case?;
 
     end if;
