@@ -4,8 +4,12 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <unordered_map>
+#define OutputBitReplace '0'
 
 using namespace std;
+
+
 
 int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
 void MakeIODecleration(ifstream &source, ofstream &dest);
@@ -14,6 +18,8 @@ void FSM2Process(int j, ofstream &dest);
 void Fill_state_product(ifstream &source, ofstream &dest);
 bool isStringInVector(const string& str, const vector<string>& vec);
 int  find_cfsm(string state);
+void Optimiser(ifstream &source, vector<vector<string>> &cfsm);
+
 
 struct state_product {
     string x;
@@ -54,8 +60,11 @@ int main()
     //cin >> CfsmAmount;
 
     // This is an assignment for prototyping. delete later!
-    cfsm.push_back({"st0", "st1", "st2", "st3", "st4", "st5", "st6"});
-    cfsm.push_back({"st7", "st8", "st9", "st10", "st11", "st12"});
+    //cfsm.push_back({"st0", "st1", "st2", "st3", "st4", "st5", "st6"});
+    //cfsm.push_back({"st7", "st8", "st9", "st10", "st11", "st12"});
+
+    Optimiser(source, cfsm);
+
 
     KissFiles2Vhd(CfsmAmount, source, dest); // Preform the parsing process
 
@@ -204,14 +213,18 @@ void FSM2Process(int j, ofstream &dest)
     for(int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
     {
         dest << "\t\t\t\t" << "when " << cfsm[j][i] << " =>\n\n";
-        dest << "\t\t\t\t\t" << "case x is" << endl;
+        dest << "\t\t\t\t\t" << "case? x is" << endl;
         for (int k = 0; k < stateProducts.size(); k++) // Iterate over all the state_products
         {
             if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
             {
                 dest << "\t\t\t\t\t\t" << "when \"" << stateProducts[k].x << "\" =>" << endl;
                 dest << "\t\t\t\t\t\t\t" << "st <= " << stateProducts[k].ns << ";" << endl;
-                dest << "\t\t\t\t\t\t\t" << "y <= \"" << stateProducts[k].y << "\";" << endl;
+
+                string modified_y = stateProducts[k].y;
+                replace(modified_y.begin(), modified_y.end(), '-', OutputBitReplace);
+                
+                dest << "\t\t\t\t\t\t\t" << "y <= \"" << modified_y << "\";" << endl;
                 if(!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                 {
                     dest << "\t\t\t\t\t\t\t" << "z("<< j <<") <= '0';" << endl; // Disable current cfsm clock
@@ -221,12 +234,11 @@ void FSM2Process(int j, ofstream &dest)
             }
         }
         dest << "\t\t\t\t\t\t" << "when others => NULL;" << endl;
-        dest << "\t\t\t\t\t" << "end case;\n\n";
+        dest << "\t\t\t\t\t" << "end case?;\n\n";
     }
     dest << "\t\t\t\t" << "when others => NULL;" << endl;
     dest << "\t\t\t" << "end case;" << endl;
 }
-
 
 
 void Fill_state_product(ifstream &source, ofstream &dest) {
@@ -235,14 +247,33 @@ void Fill_state_product(ifstream &source, ofstream &dest) {
         return;
     }
 
+    unordered_map<string, string> stateMap;  // To map states to state names
     string line;
+    string r_value;
+
+    // First pass to find and handle the ".r" value
+    while (getline(source, line)) {
+        if (line.find(".r ") == 0) {
+            istringstream iss(line);
+            string temp;
+            iss >> temp >> r_value;  // Read ".r" and its associated value
+            stateMap[r_value] = "st0";  // Map the reset state to "st0"
+            break;  // We assume there's only one ".r" line
+        }
+    }
+
+    // Rewind to the beginning of the file for the second pass
+    source.clear();
+    source.seekg(0, ios::beg);
+
+    // Second pass to process the actual state lines
     while (getline(source, line)) {
         // Skip lines that start with a period or are empty
         if (line.empty() || line[0] == '.')
             continue;
 
         
-        
+
         // Extract fields from the line
         istringstream iss(line);
         if (!(iss >> sp.x >> sp.cs >> sp.ns >> sp.y)) {
@@ -250,12 +281,28 @@ void Fill_state_product(ifstream &source, ofstream &dest) {
             continue;
         }
 
+        
+        // Map and replace cs
+       if (sp.cs != "st0" && stateMap.find(sp.cs) == stateMap.end()) {
+        string stateName = "st" + to_string(stateMap.size());
+        stateMap[sp.cs] = stateName;
+    }
+    
+        sp.cs = stateMap[sp.cs];
+
+        // Map and replace ns
+       if (sp.ns != "st0" && stateMap.find(sp.ns) == stateMap.end()) {
+        string stateName = "st" + to_string(stateMap.size());
+        stateMap[sp.ns] = stateName;
+    }
+        sp.ns = stateMap[sp.ns];
+
         // Add the state_product instance to the vector
         stateProducts.push_back(sp);
-
+        int i=0;
+        i++;
         // Print the contents of the state_product instance
-        cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
-       
+        cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y  << endl;
     }
 }
 
@@ -280,4 +327,48 @@ int find_cfsm(string state)
     }
     cerr << "Error: state not found in any cfsm" << endl;
     return -1;
+}
+
+void Optimiser(ifstream &source, vector<vector<string>> &cfsm)
+{
+    if (source.is_open())
+    {
+        source.clear();
+        source.seekg(0, ios::beg);
+
+        string line;
+        while (getline(source, line))
+        {
+            size_t s_pos = line.find(".s ");
+
+            // Handle ".s" case
+            if (s_pos != string::npos)
+            {
+                size_t startIndex = s_pos + 3; // Skip ".s "
+                size_t endIndex = line.find_first_not_of("0123456789", startIndex);
+                string numberString = line.substr(startIndex, endIndex - startIndex);
+                int number = stoi(numberString);
+
+                vector<string> firstHalf;
+                vector<string> secondHalf;
+
+                for (int i = 0; i < number; ++i)
+                {
+                    if (i < number / 2)
+                    {
+                        firstHalf.push_back("st" + to_string(i));
+                    }
+                    else
+                    {
+                        secondHalf.push_back("st" + to_string(i));
+                    }
+                }
+
+                cfsm.push_back(firstHalf);
+                cfsm.push_back(secondHalf);
+            }
+        }
+    }
+    source.clear();
+    source.seekg(0, ios::beg);
 }
