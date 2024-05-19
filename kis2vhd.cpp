@@ -14,6 +14,7 @@ void FSM2Process(int j, ofstream &dest);
 void Fill_state_product(ifstream &source, ofstream &dest);
 bool isStringInVector(const string& str, const vector<string>& vec);
 int  find_cfsm(string state);
+void create_tb(/*args*/);
 
 struct state_product {
     string x;
@@ -27,21 +28,23 @@ vector<vector<string>> cfsm; // Vector to store the states of each cfsm
 
 
 // Create a Global state_product instance
-        state_product sp;
+state_product sp;
+
+string ProjectFolder;
+string SourceName;
 
 int main()
 {
-    string ProjectFolder;
-    string SourceFile;
+    
     // Get destination and source files from user
     cout << "\nEnter the path of the source file: " << endl;
     getline(cin, ProjectFolder);
     cout << "\nEnter file name: " << endl;
-    getline(cin, SourceFile);
+    getline(cin, SourceName);
 
     // Open source and dest files
-    ifstream source(ProjectFolder + "/" + SourceFile);
-    ofstream dest(ProjectFolder + "/state_machine.vhd");
+    ifstream source(ProjectFolder + "/" + SourceName + ".kis");
+    ofstream dest(ProjectFolder + "/optimised/" + SourceName + ".vhd");
 
     if (!source || !dest)
     {
@@ -84,9 +87,10 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     dest << "\t" << "clk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
     MakeIODecleration(source, dest);
     dest << ");" << endl;
+    dest << "\t" << "z\t\t: out\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
     dest << "end entity state_machine;" << endl;
     dest << "\narchitecture arc_state_machine of state_machine is" << endl;
-    dest << "\tsignal z\t\t: std_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
+    // dest << "\tsignal z\t\t: std_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
 
     source.clear();
     source.seekg(0, ios::beg); // Return to the beginning of the file
@@ -280,4 +284,18 @@ int find_cfsm(string state)
     }
     cerr << "Error: state not found in any cfsm" << endl;
     return -1;
+}
+
+
+void create_tb(/*args*/) // Copy and use the template files to create the testbench
+{
+    // symbols: $ = source name,  @ = vcd run time, ~ = replace with number from cpp file
+    // template files: vcdrun.do, tb_state_machine.vhd, tb_package_state_machine.vhd
+    // new files: tb_$.vhd, tb_package_$.vhd, vcdrun_$.vhd
+
+    // Create new files in the destination folder
+    // test if the files are created successfully
+    // Copy the content of the template files to the new files
+    // Replace the symbols in the new files with the appropriate values
+
 }
