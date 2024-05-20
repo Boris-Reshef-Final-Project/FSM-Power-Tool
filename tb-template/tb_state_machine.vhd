@@ -21,7 +21,7 @@ architecture arc_tb of tb_state_machine is
     file kis_src    : text;
     variable prod   : line;
     variable f_stat : file_open_status;
-    variable st     : state;
+    variable st     : state := st0;
 
     -- Skip white spaces in line, spaces and tabs(HT) and returns the new position
     procedure skip_white(variable L : inout line; pos : inout integer) is
