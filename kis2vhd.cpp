@@ -4,11 +4,16 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <map>
 #include <unordered_map>
 #define OutputBitReplace '0'
 
 using namespace std;
 
+string Original_Reset_value;        // Original_Reset_value          -> (Fill_state_product)
+int input,output,products,states;   // products is (מספר שורות) - 1;-> (MakeIODecleration)
+                                    // input,output                  -> (MakeIODecleration)
+                                    // states                        -> (MakeTypeState)
 
 
 int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
@@ -18,8 +23,8 @@ void FSM2Process(int j, ofstream &dest);
 void Fill_state_product(ifstream &source, ofstream &dest);
 bool isStringInVector(const string& str, const vector<string>& vec);
 int  find_cfsm(string state);
-void Optimiser(ifstream &source, vector<vector<string>> &cfsm);
-
+void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
+void Optimiser_Min_trans_prob(ifstream &source, vector<vector<string>> &cfsm);
 
 struct state_product {
     string x;
@@ -29,11 +34,12 @@ struct state_product {
 };
 
 vector<state_product> stateProducts;
+
 vector<vector<string>> cfsm; // Vector to store the states of each cfsm
 
 
-// Create a Global state_product instance
-        state_product sp;
+
+        
 
 int main()
 {
@@ -63,7 +69,7 @@ int main()
     //cfsm.push_back({"st0", "st1", "st2", "st3", "st4", "st5", "st6"});
     //cfsm.push_back({"st7", "st8", "st9", "st10", "st11", "st12"});
 
-    Optimiser(source, cfsm);
+    
 
 
     KissFiles2Vhd(CfsmAmount, source, dest); // Preform the parsing process
@@ -97,19 +103,26 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     dest << "\narchitecture arc_state_machine of state_machine is" << endl;
     dest << "\tsignal z\t\t: std_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
 
-    source.clear();
-    source.seekg(0, ios::beg); // Return to the beginning of the file
+    
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
                                  // signal st : state;
     dest << "begin" << endl << endl;
                                  
-    source.clear();
-    source.seekg(0, ios::beg); // return to the beginning of the file
+   
     
     cout << "Now starting Fill_state_product"<< endl;
     Fill_state_product(source, dest);
     cout << "Now Finished Fill_state_product"<< endl;
+
+    int Opt;
+    cout << "Choose Optimiser: 1 - Optimiser_Axe, 2 - Optimiser_Min_trans_prob"<< endl;
+    cin >> Opt;
+    if (Opt ==1)
+    Optimiser_Axe(source, cfsm); // Located After (Fill_state_product) && Before (FSM2Process) √√√√√√√√√
+    else
+    Optimiser_Min_trans_prob(source, cfsm);
+
 
     int j;
     for (j = 0; j < CfsmAmount; j++)
@@ -143,6 +156,7 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
         {
             size_t i_pos = line.find(".i ");
             size_t o_pos = line.find(".o ");
+            size_t p_pos = line.find(".p ");
 
             // Handle ".i" case
             if (i_pos != string::npos)
@@ -151,7 +165,9 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
                 int number = stoi(numberString) - 1;
+                input = stoi(numberString) - 1;
                 dest << "\t" << "x\t\t: in\tstd_logic_vector(" << number << " downto 0);" << endl;
+
             }
 
             // Handle ".o" case
@@ -161,7 +177,19 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
                 int number = stoi(numberString) - 1;
+                output = stoi(numberString) - 1;
                 dest << "\t" << "y\t\t: out\tstd_logic_vector(" << number << " downto 0)" << endl;
+            }
+
+
+             if (p_pos != string::npos)
+            {
+                size_t startIndex = p_pos + 3; // Skip ".p "
+                size_t endIndex = line.find_first_not_of("0123456789", startIndex);
+                string numberString = line.substr(startIndex, endIndex - startIndex);
+                
+                products = stoi(numberString) - 1;
+                
             }
         }
     }
@@ -173,6 +201,9 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
 {
     if (source.is_open() && dest.is_open())
     {
+        source.clear();
+        source.seekg(0, ios::beg); // Return to the beginning of the file
+
         string line;
         while (getline(source, line))
         {
@@ -185,6 +216,9 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
                 int number = stoi(numberString);
+
+                states = stoi(numberString);
+
 
                 // Write type declaration
                 dest << "\t" << "type state is (";
@@ -248,19 +282,25 @@ void Fill_state_product(ifstream &source, ofstream &dest) {
     }
 
     unordered_map<string, string> stateMap;  // To map states to state names
+      // To store state_product instances
     string line;
-    string r_value;
+    
+
+    source.clear();
+    source.seekg(0, ios::beg);
 
     // First pass to find and handle the ".r" value
     while (getline(source, line)) {
         if (line.find(".r ") == 0) {
             istringstream iss(line);
             string temp;
-            iss >> temp >> r_value;  // Read ".r" and its associated value
-            stateMap[r_value] = "st0";  // Map the reset state to "st0"
+            iss >> temp >> Original_Reset_value;  // Read ".r" and its associated value
+            stateMap[Original_Reset_value] = "st0";  // Map the reset state to "st0"
             break;  // We assume there's only one ".r" line
         }
     }
+
+    state_product sp;
 
     // Rewind to the beginning of the file for the second pass
     source.clear();
@@ -272,8 +312,6 @@ void Fill_state_product(ifstream &source, ofstream &dest) {
         if (line.empty() || line[0] == '.')
             continue;
 
-        
-
         // Extract fields from the line
         istringstream iss(line);
         if (!(iss >> sp.x >> sp.cs >> sp.ns >> sp.y)) {
@@ -281,29 +319,34 @@ void Fill_state_product(ifstream &source, ofstream &dest) {
             continue;
         }
 
-        
-        // Map and replace cs
-       if (sp.cs != "st0" && stateMap.find(sp.cs) == stateMap.end()) {
-        string stateName = "st" + to_string(stateMap.size());
-        stateMap[sp.cs] = stateName;
-    }
-    
-        sp.cs = stateMap[sp.cs];
+        // Map and replace cs if it does not start with 's'
+        if (sp.cs != "st0" && stateMap.find(sp.cs) == stateMap.end() && sp.cs[0] != 's') {
+            string stateName = "st" + to_string(stateMap.size());
+            stateMap[sp.cs] = stateName;
+        }
 
-        // Map and replace ns
-       if (sp.ns != "st0" && stateMap.find(sp.ns) == stateMap.end()) {
-        string stateName = "st" + to_string(stateMap.size());
-        stateMap[sp.ns] = stateName;
-    }
-        sp.ns = stateMap[sp.ns];
+        if (sp.cs[0] != 's') {
+            sp.cs = stateMap[sp.cs];
+        }
+
+        // Map and replace ns if it does not start with 's'
+        if (sp.ns != "st0" && stateMap.find(sp.ns) == stateMap.end() && sp.ns[0] != 's') {
+            string stateName = "st" + to_string(stateMap.size());
+            stateMap[sp.ns] = stateName;
+        }
+
+        if (sp.ns[0] != 's') {
+            sp.ns = stateMap[sp.ns];
+        }
 
         // Add the state_product instance to the vector
         stateProducts.push_back(sp);
-        int i=0;
-        i++;
+
         // Print the contents of the state_product instance
-        cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y  << endl;
+        cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
     }
+
+   
 }
 
 
@@ -329,7 +372,7 @@ int find_cfsm(string state)
     return -1;
 }
 
-void Optimiser(ifstream &source, vector<vector<string>> &cfsm)
+void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
 {
     if (source.is_open())
     {
@@ -371,4 +414,87 @@ void Optimiser(ifstream &source, vector<vector<string>> &cfsm)
     }
     source.clear();
     source.seekg(0, ios::beg);
+}
+
+void calculate_transition_probabilities(const vector<state_product>& stateProducts, map<pair<string, string>, double>& transitionProbs) {
+    // Initialize the transition counts
+    map<pair<string, string>, int> transitionCounts;
+    map<string, int> stateCounts;
+
+    // Count the transitions and occurrences of each state
+    for (const auto& sp : stateProducts) {
+        transitionCounts[{sp.cs, sp.ns}]++;
+        stateCounts[sp.cs]++;
+    }
+
+    // Calculate transition probabilities
+    for (const auto& count : transitionCounts) {
+        string cs = count.first.first;
+        string ns = count.first.second;
+        transitionProbs[{cs, ns}] = static_cast<double>(count.second) / stateCounts[cs];
+    }
+}
+
+
+void Optimiser_Min_trans_prob(ifstream &source, vector<vector<string>> &cfsm) {
+    if (!source.is_open()) {
+        cerr << "Error: Unable to open source file." << endl;
+        return;
+    }
+
+    map<pair<string, string>, double> transitionProbs;
+    calculate_transition_probabilities(stateProducts, transitionProbs);
+
+    vector<string> firstHalf;
+    vector<string> secondHalf;
+
+    // Naive partitioning strategy (This can be improved)
+    for (int i = 0; i < states; ++i) {
+        if (i < states / 2) {
+            firstHalf.push_back("st" + to_string(i));
+        } else {
+            secondHalf.push_back("st" + to_string(i));
+        }
+    }
+
+    bool improvement = true;
+    while (improvement) {
+        improvement = false;
+        for (const auto& state : firstHalf) {
+            double currentP12 = 0.0, currentP21 = 0.0;
+            double newP12 = 0.0, newP21 = 0.0;
+
+            // Calculate current probabilities
+            for (const auto& ns : secondHalf) {
+                currentP12 += transitionProbs[{state, ns}];
+                currentP21 += transitionProbs[{ns, state}];
+            }
+
+            // Simulate moving the state to the second half
+            for (const auto& ns : firstHalf) {
+                if (ns != state) {
+                    newP12 += transitionProbs[{state, ns}];
+                    newP21 += transitionProbs[{ns, state}];
+                }
+            }
+            for (const auto& ns : secondHalf) {
+                if (ns != state) {
+                    newP12 += transitionProbs[{state, ns}];
+                    newP21 += transitionProbs[{ns, state}];
+                }
+            }
+
+            // Check if moving the state reduces the transition probability
+            if (newP12 + newP21 < currentP12 + currentP21) {
+                firstHalf.erase(remove(firstHalf.begin(), firstHalf.end(), state), firstHalf.end());
+                secondHalf.push_back(state);
+                improvement = true;
+                break;
+            }
+        }
+    }
+
+    cfsm.push_back(firstHalf);
+    cfsm.push_back(secondHalf);
+    
 }
