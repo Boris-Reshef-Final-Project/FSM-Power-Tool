@@ -1,3 +1,15 @@
+/**-------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+Project:        FSM-Power-Tool
+Authors:        Boris Karasov, Reshef Schachter
+Date:           2023-2024
+Description:    This is the main file for our bachelor degree in Electrical Engineering final project.
+Notes:          This is meant to work with a VHDL2008 compiler ONLY!
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------**/
+
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -11,12 +23,7 @@
 
 using namespace std;
 
-stringstream type_state;
-vector<string> State_list;
-string Original_Reset_value;         // Original_Reset_value          -> (Fill_state_product)
-int input, output, products, states; // products is (num_lines) - 1;  -> (MakeIODecleration)
-                                     // input,output                  -> (MakeIODecleration)
-                                     // states                        -> (MakeIODecleration)
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 struct state_product
 {
@@ -28,10 +35,17 @@ struct state_product
 
 vector<state_product> stateProducts;
 vector<vector<string>> cfsm; // Vector to store the states of each cfsm
-// Create a Global state_product instance
-state_product sp;
+state_product sp; // Create a Global state_product instance
 string ProjectFolder;
 string SourceName;
+stringstream type_state;
+vector<string> State_list;
+string Original_Reset_value;         // Original_Reset_value          -> (Fill_state_product)
+int input, output, products, states; // products is (num_lines) - 1;  -> (MakeIODecleration)
+                                     // input,output                  -> (MakeIODecleration)
+                                     // states                        -> (MakeIODecleration)
+
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
 void MakeIODecleration(ifstream &source, ofstream &dest);
@@ -44,8 +58,7 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm);
 void create_tb(/*args*/);
 
-
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 int main()
 {
@@ -83,7 +96,7 @@ int main()
     return 0;
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Parser function - Convert Kiss to Vhd
 {
@@ -141,9 +154,9 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     return 0;
 }
 
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
-
-void MakeIODecleration(ifstream &source, ofstream &dest) //
+void MakeIODecleration(ifstream &source, ofstream &dest)
 {
     string line;
     
@@ -195,7 +208,7 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
     }
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the enum type state
 {
@@ -211,7 +224,7 @@ void MakeTypeState(ifstream &source, ofstream &dest) // Write the values of the 
         dest << "\tsignal st : state;" << endl;
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void FSM2Process(int j, ofstream &dest)
 {
@@ -246,13 +259,11 @@ void FSM2Process(int j, ofstream &dest)
     dest << "\t\t\t" << "end case;" << endl;
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void Fill_state_product(ifstream &source, ofstream &dest)
 {
-
     unordered_map<string, string> stateMap; // To map states to state names
-                                            // To store state_product instances
     string line;
     vector<string> Test_Format_list; // List of states in the format "st0", "st1", etc.
 
@@ -288,14 +299,14 @@ void Fill_state_product(ifstream &source, ofstream &dest)
             continue;
 
         // Extract fields from the line
-        istringstream iss(line); // 0000 0101 1010 1111
+        istringstream iss(line);
         if (!(iss >> sp.x >> sp.cs >> sp.ns >> sp.y))
-        { //      st5
+        {
             cerr << "Error: Failed to parse line: " << line << endl;
-            continue;
+            break;
         }
 
-        // Map and replace cs if it does not start with 's'
+        // Map and replace cs if it does not match the Format list
         if (stateMap.find(sp.cs) == stateMap.end()) {
             if (!isStringInVector(sp.cs, Test_Format_list)){
             string stateName = "st" + to_string(stateMap.size());
@@ -312,8 +323,8 @@ void Fill_state_product(ifstream &source, ofstream &dest)
             sp.cs =  stateMap[sp.cs];
         }
         
-        // Map and replace ns if it does not start with 's'
-         if (stateMap.find(sp.ns) == stateMap.end() )
+        // Map and replace ns if it does not match the Format list
+         if (stateMap.find(sp.ns) == stateMap.end())
         {
             if (!isStringInVector(sp.ns, Test_Format_list)){
             string stateName = "st" + to_string(stateMap.size());
@@ -337,31 +348,25 @@ void Fill_state_product(ifstream &source, ofstream &dest)
     }
 }
 
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
-
-// function to check if a string is in a vector of strings
-bool isStringInVector(const string &str, const vector<string> &vec)
+bool isStringInVector(const string &str, const vector<string> &vec) // function to check if a string is in a vector of strings
 {
     return find(vec.begin(), vec.end(), str) != vec.end();
 }
 
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
-
-// function to find which cfsm the state belongs to
-int find_cfsm(string state)
+int find_cfsm(string state) // function to find which cfsm the state belongs to
 {
     for (int i = 0; i < cfsm.size(); i++)
-    {
         if (isStringInVector(state, cfsm[i]))
-        {
-            return i;
-        }
-    }
+            return i;      
     cerr << "Error: state not found in any cfsm" << endl;
     return -1;
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
 {
@@ -378,19 +383,19 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
     cfsm.push_back(secondHalf);
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs)
 {
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm)
 {
 }
 
-
+/*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void create_tb(/*args*/) // Copy and use the template files to create the testbench
 {
