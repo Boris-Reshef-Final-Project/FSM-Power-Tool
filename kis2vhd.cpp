@@ -6,12 +6,13 @@
 #include <sstream>
 #include <map>
 #include <unordered_map>
+#include <cmath>
 #define OutputBitReplace '0'
 
 using namespace std;
 
 string Original_Reset_value;         // Original_Reset_value          -> (Fill_state_product)
-int input, output, products, states; // products is (מספר שורות) - 1;-> (MakeIODecleration)
+int input, output, NP, states;       // NP is (מספר שורות) ;         -> (MakeIODecleration)
                                      // input,output                  -> (MakeIODecleration)
                                      // states                        -> (MakeTypeState)
 stringstream type_state;
@@ -26,6 +27,10 @@ bool isStringInVector(const string &str, const vector<string> &vec);
 int find_cfsm(string state);
 void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm);
+void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
+
+
+
 
 struct state_product
 {
@@ -36,6 +41,13 @@ struct state_product
 };
 
 vector<state_product> stateProducts;
+
+unordered_map<string, unordered_map<string, double>> map_state_prob(
+    const vector<state_product>& stateProducts, 
+    const unordered_map<string, double>& stateProbMap,
+    const vector<double>& productProbabilities);
+
+vector<double> calc_product_prob(const vector<state_product>& stateProducts);
 
 vector<vector<string>> cfsm; // Vector to store the states of each cfsm
 
@@ -99,6 +111,23 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     cout << "Now starting Fill_state_product" << endl;
     Fill_state_product(source, dest); // state_list = ("st0,st1...,stn")
     cout << "Now Finished Fill_state_product" << endl;
+
+    
+    vector<double> productProbabilities = calc_product_prob(stateProducts);
+    unordered_map<string, double> stateProbMap;
+    
+
+    calc_state_prob_V1(stateProbMap, State_list, states);
+
+ auto transitionProbMap = map_state_prob(stateProducts, stateProbMap, productProbabilities);
+
+    // Print the transition probability map
+    for (const auto& si : stateProbMap) {
+        for (const auto& sj : stateProbMap) {
+            cout << si.first << " -> " << sj.first << ": " << transitionProbMap[si.first][sj.first] << endl;
+        }
+    }
+
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
                                  // signal st : state;
@@ -184,7 +213,7 @@ void MakeIODecleration(ifstream &source, ofstream &dest) //
                 size_t endIndex = line.find_first_not_of("0123456789", startIndex);
                 string numberString = line.substr(startIndex, endIndex - startIndex);
 
-                products = stoi(numberString) - 1;
+                NP = stoi(numberString) ;
             }
         }
     }
@@ -418,6 +447,59 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
     source.clear();
     source.seekg(0, ios::beg);
 }
+
+vector<double> calc_product_prob(const vector<state_product>& stateProducts) {
+    vector<double> probabilities;
+
+    for (const auto& product : stateProducts) {
+        int totalBits = product.x.size();
+        int dontCareBits = count(product.x.begin(), product.x.end(), '-');
+        int careBits = totalBits - dontCareBits;
+        double probability = pow(2, static_cast<double>(-careBits));
+        probabilities.push_back(probability);
+    }
+
+    return probabilities;
+}
+
+
+void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states) {
+    double probability = 1.0 / states;
+
+    for (const string& state : State_list) {
+        stateProbMap[state] = probability;
+    }
+}
+
+unordered_map<string, unordered_map<string, double>> map_state_prob(
+    const vector<state_product>& stateProducts, 
+    const unordered_map<string, double>& stateProbMap,
+    const vector<double>& productProbabilities) {
+    
+    unordered_map<string, unordered_map<string, double>> transitionProbMap;
+    unordered_map<string, double> stateProb;
+
+    for (const auto& sp : stateProducts) {
+        stateProb[sp.cs] = stateProbMap.at(sp.cs);
+    }
+
+    for (const auto& si : stateProbMap) {
+        for (const auto& sj : stateProbMap) {
+            double sumProductProb = 0.0;
+
+            for (size_t k = 0; k < stateProducts.size(); ++k) {
+                if (stateProducts[k].cs == si.first && stateProducts[k].ns == sj.first) {
+                    sumProductProb += productProbabilities[k];
+                }
+            }
+
+            transitionProbMap[si.first][sj.first] = stateProb.at(si.first) * sumProductProb;
+        }
+    }
+
+    return transitionProbMap;
+}
+
 
 void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs)
 {
