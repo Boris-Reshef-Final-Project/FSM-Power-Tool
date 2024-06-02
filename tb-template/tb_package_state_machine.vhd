@@ -1,21 +1,21 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package $_tb_pack is
+package tb_$_pack is
 
   -- constants and types
-  constant num_inputs   : positive  := ~;
-  constant num_outputs  : positive  := ~;
-  constant num_clocks   : positive  := ~;
-  constant clk_freq     : positive  := ~; -- in MHz  
-  constant clk_period   : time      := ~ ns;
-  type state is (~);
+  constant num_inputs   : positive  := ?x; -- number of inputs
+  constant num_outputs  : positive  := ?y; -- number of outputs
+  constant num_clocks   : positive  := ?c; -- number of clocks
+  constant clk_period   : time      := ?p;
+  -- state type
+  ?s
     
   -- file names and locations
-  constant kis_src_path : string    := ~; -- file path of source .kis file
+  constant kis_src_path : string    := ?k; -- file path of source .kis file
 
-end package $_tb_pack;
+end package tb_$_pack;
 
 
-package body $_tb_pack is
-end package body $_tb_pack;
+package body tb_$_pack is
+end package body tb_$_pack;

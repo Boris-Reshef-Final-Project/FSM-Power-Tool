@@ -2,6 +2,6 @@
 *.json
 *.kis
 *.docx
-optimised/*.vhd
+optimised/*
 dest.vhd
 state_machine.vhd

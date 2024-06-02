@@ -6,12 +6,12 @@ use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
 
 library work;
-use work.srcname_tb_pack.all; -- Use the package
+use work.tb_package_$.all; -- Use the package
 
-entity tb_state_machine is
-end entity tb_state_machine;
+entity tb_$ is
+end entity tb_$;
 
-architecture arc_tb of tb_state_machine is
+architecture arc_tb_universal of tb_$ is
     signal rst      : std_logic := '1';
     signal clk      : std_logic_vector(num_clocks  - 1  downto 0) := (others => '0');
     signal x        : std_logic_vector(num_inputs  - 1  downto 0) := (others => '0');
@@ -77,4 +77,4 @@ begin
         wait;
     end process;
 
-end architecture arc_tb;
+end architecture arc_tb_universal;
