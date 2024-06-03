@@ -66,7 +66,7 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm);
 void create_tb(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
-void Return2Beginning(fstream &file);
+void Return2Beginning(ifstream &file);
 void CreateSubFolders();
 void SetWorkingDirectory();
 
@@ -84,10 +84,6 @@ int main()
     getline(cin, ProjectFolder);
     cout << "\nEnter file name: " << endl;
     getline(cin, SourceName);
-
-    filesystem::current_path(".\\");
-    cout << "Working directory: " << filesystem::absolute(".\\") << endl;
-    
 
     // Open source and destin files
     CreateSubFolders();
@@ -294,13 +290,11 @@ void Fill_state_product(ifstream &source, ofstream &destin)
 {
     unordered_map<string, string> stateMap; // To map states to state names
     string line;
-    vector<string> Test_Format_list; // List of states in the format "st0", "st1", etc.
 
     for (int i = 0; i < states; ++i) // Generate format list for states
-        Test_Format_list.push_back("st" + to_string(i));
+        State_list.push_back("st" + to_string(i));
 
-    source.clear();
-    source.seekg(0, ios::beg);
+    Return2Beginning(source);
 
     // First pass to find and handle the ".r" value
     while (getline(source, line))
@@ -311,15 +305,13 @@ void Fill_state_product(ifstream &source, ofstream &destin)
             string temp;
             iss >> temp >> Original_Reset_state_code;    // Read ".r" and its associated value
             stateMap[Original_Reset_state_code] = "st0"; // Map the reset state to "st0"
-            State_list.push_back("st0");
             break; // We assume there's only one ".r" line
         }
     }
 
     // Rewind to the beginning of the file for the second pass
-    source.clear();
-    source.seekg(0, ios::beg);
-
+    Return2Beginning(source);
+    
     // Second pass to process the actual state lines
     while (getline(source, line))
     {
@@ -337,39 +329,32 @@ void Fill_state_product(ifstream &source, ofstream &destin)
 
         // Map and replace cs if it does not match the Format list
         if (stateMap.find(sp.cs) == stateMap.end()) {
-            if (!isStringInVector(sp.cs, Test_Format_list)){
+            if (!isStringInVector(sp.cs, State_list)){
             string stateName = "st" + to_string(stateMap.size());
             stateMap[sp.cs] = stateName;
             State_list.push_back(stateName);
             sp.cs = stateMap[sp.cs];
             }
-            else {
+            else 
                 stateMap[sp.cs]=sp.cs;
-                State_list.push_back(sp.cs);
-            }
         }
-        else {
+        else 
             sp.cs =  stateMap[sp.cs];
-        }
         
         // Map and replace ns if it does not match the Format list
          if (stateMap.find(sp.ns) == stateMap.end())
         {
-            if (!isStringInVector(sp.ns, Test_Format_list)){
+            if (!isStringInVector(sp.ns, State_list)){
             string stateName = "st" + to_string(stateMap.size());
             stateMap[sp.ns] = stateName;
-            State_list.push_back(stateName);
             sp.ns = stateMap[sp.ns];
 
             }
-            else {
+            else 
                 stateMap[sp.ns]=sp.ns;
-                State_list.push_back(sp.ns);
-            }
         }
-        else {
+        else 
             sp.ns =  stateMap[sp.ns];
-        }
         // Add the state_product instance to the vector
         stateProducts.push_back(sp);
         // Print the contents of the state_product instance
@@ -507,7 +492,7 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void Return2Beginning(fstream &file) // Return to the beginning of the file
+void Return2Beginning(ifstream &file) // Return to the beginning of the file
 {
     file.clear();
     file.seekg(0, ios::beg);

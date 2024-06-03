@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package tb_$_pack is
+package tb_package_$ is
 
   -- constants and types
   constant num_inputs   : positive  := ?x; -- number of inputs
@@ -14,8 +14,8 @@ package tb_$_pack is
   -- file names and locations
   constant kis_src_path : string    := ?k; -- file path of source .kis file
 
-end package tb_$_pack;
+end package tb_package_$;
 
 
-package body tb_$_pack is
-end package body tb_$_pack;
+package body tb_package_$ is
+end package body tb_package_$;
