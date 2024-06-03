@@ -57,7 +57,7 @@ begin
     report "Source .kis file successfully opened";
 
     -- Instantiate the device under test (DUT)
-    DUT : entity work.srcname
+    DUT : entity work.$
         port map (rst => rst, clk => clk, x => x, y => y, z => z);
 
     -- Generate clock(s) with enable

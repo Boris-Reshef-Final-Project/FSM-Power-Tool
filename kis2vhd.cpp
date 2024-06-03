@@ -22,6 +22,8 @@ Notes:          This is meant to work with a VHDL2008 compiler ONLY!
 #include <filesystem>
 #include <cerrno>
 #include <cstring>
+#include <Windows.h>
+#include <libloaderapi.h>
 
 #define OutputBitReplace '0'
 
@@ -66,6 +68,7 @@ void create_tb(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
 void Return2Beginning(fstream &file);
 void CreateSubFolders();
+void SetWorkingDirectory();
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -75,26 +78,31 @@ void CreateSubFolders();
 
 int main()
 {
+    SetWorkingDirectory();
     // Get destination and source files from user
     cout << "\nEnter the path of the source file: " << endl;
     getline(cin, ProjectFolder);
     cout << "\nEnter file name: " << endl;
     getline(cin, SourceName);
 
+    filesystem::current_path(".\\");
+    cout << "Working directory: " << filesystem::absolute(".\\") << endl;
+    
+
     // Open source and destin files
     CreateSubFolders();
     ifstream source(ProjectFolder + SourceName + ".kis");
-    NewLocation = ProjectFolder + "/" + destinationFolder + "/" + SourceName;
-    ofstream destin(NewLocation + "/" + SourceName + ".vhd");
+    NewLocation = ProjectFolder + "\\" + destinationFolder + "\\" + SourceName;
+    ofstream destin(NewLocation + "\\" + SourceName + ".vhd");
 
     if (!source)
     {
-        cerr << "Error opening source file!" << endl;
+        cerr << "Error opening source file! " << "Reason: " << strerror(errno) << endl;
         return 1;
     }
     if (!destin)
     {
-        cerr << "Error opening destination file!" << endl;
+        cerr << "Error opening destination file! " << "Reason: " << strerror(errno) << endl;
         return 1;
     }
 
@@ -125,7 +133,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     destin << "use ieee.std_logic_1164.all;" << endl;
     destin << "use ieee.std_logic_arith.all;" << endl;
     destin << "use ieee.std_logic_unsigned.all;" << endl;
-    destin << "\nentity state_machine is" << endl;
+    destin << "\nentity " << SourceName << " is" << endl;
     destin << "port(" << endl;
     destin << "\t" << "rst\t\t: in\tstd_logic;" << endl;
     destin << "\t" << "clk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
@@ -135,8 +143,8 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     
     destin << "\t" << "z\t\t: out\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0)" << endl;
     destin << ");" << endl;
-    destin << "end entity state_machine;" << endl;
-    destin << "\narchitecture arc_state_machine of state_machine is" << endl;
+    destin << "end entity " << SourceName << ";" << endl;
+    destin << "\narchitecture arc_state_machine of " << SourceName << " is" << endl;
 
     //cout << "Now starting Fill_state_product" << endl;
     Fill_state_product(source, destin); // Create state_list and assign values to stateProducts
@@ -430,9 +438,9 @@ void create_tb(int num_clocks/*args*/) // Copy and use the template files to cre
         Replace the symbols in the new files with the appropriate values */
 
     // Open the template files for read
-    ifstream VcdDoTemplate  (templateFolder + "/vcdrun.do");
-    ifstream TbTemplate     (templateFolder + "/tb_state_machine.vhd");
-    ifstream PackTemplate   (templateFolder + "/tb_package_state_machine.vhd");
+    ifstream VcdDoTemplate  (templateFolder + "\\vcdrun.do");
+    ifstream TbTemplate     (templateFolder + "\\tb_state_machine.vhd");
+    ifstream PackTemplate   (templateFolder + "\\tb_package_state_machine.vhd");
 
     // Check if the template files were opened successfully
     if (!VcdDoTemplate || !TbTemplate || !PackTemplate)
@@ -442,9 +450,9 @@ void create_tb(int num_clocks/*args*/) // Copy and use the template files to cre
     }
 
     // Create new files in the destination folder
-    ofstream TbVhd       (NewLocation + "/tb_" +         SourceName + ".vhd");
-    ofstream TbPackageVhd(NewLocation + "/tb_package_" + SourceName + ".vhd");
-    ofstream VcdDoTb     (NewLocation + "/vcdrun_" +     SourceName + ".do");
+    ofstream TbVhd       (NewLocation + "\\tb_" +         SourceName + ".vhd");
+    ofstream TbPackageVhd(NewLocation + "\\tb_package_" + SourceName + ".vhd");
+    ofstream VcdDoTb     (NewLocation + "\\vcdrun_" +     SourceName + ".do");
 
     // Check if the new files were created successfully
     if (!TbVhd || !TbPackageVhd || !VcdDoTb)
@@ -513,6 +521,20 @@ void CreateSubFolders() // Create the necessary subfolders
     if (!filesystem::exists(destinationFolder))
         filesystem::create_directory(destinationFolder);
     // Subfolder for the specific source
-    if (!filesystem::exists(destinationFolder + "/" + SourceName))
-        filesystem::create_directory(destinationFolder + "/" + SourceName);
+    if (!filesystem::exists(destinationFolder + "\\" + SourceName))
+        filesystem::create_directory(destinationFolder + "\\" + SourceName);
+}
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+void SetWorkingDirectory() // Set the working directory to the exe location
+{
+    using namespace std;
+   // Get the full path of the executable
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    string::size_type pos = string(buffer).find_last_of("\\/");
+    string exePath = string(buffer).substr(0, pos);
+    // Set the working directory to the executable location
+    filesystem::current_path(exePath);
 }
