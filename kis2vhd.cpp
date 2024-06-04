@@ -24,6 +24,7 @@ Notes:          This is meant to work with a VHDL2008 compiler ONLY!
 #include <cstring>
 #include <Windows.h>
 #include <libloaderapi.h>
+#include <functional>
 
 #define OutputBitReplace '0'
 
@@ -46,6 +47,7 @@ string templateFolder    = "tb-template";   // Name of template folder
 string destinationFolder = "optimised";     // Name of destination folder
 stringstream type_state;                    // String stream to store the type state line
 vector<string> State_list;                  // Vector to store the state names
+vector<string> testarray;                   // Vector to test array for the TB
 string Original_Reset_state_code;           // The name (code) of the original reset state in the Kiss file
 int input, output, products, states;        // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
 
@@ -66,9 +68,11 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm);
 void create_tb(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol);
 void Return2Beginning(ifstream &file);
 void CreateSubFolders();
 void SetWorkingDirectory();
+string PrintProducts(int i);
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -357,6 +361,12 @@ void Fill_state_product(ifstream &source, ofstream &destin)
             sp.ns =  stateMap[sp.ns];
         // Add the state_product instance to the vector
         stateProducts.push_back(sp);
+        
+        // Add contents to testarray
+        static int k = 0;
+        testarray.push_back(("\t" + to_string(k++) + "\t=> (x => \"" + sp.x + "\",\tCS => " + sp.cs +
+                            ",\tNS => " + sp.ns + ",\ty => \"" + sp.y + "\")"));
+        
         // Print the contents of the state_product instance
         cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
     }
@@ -457,11 +467,11 @@ void create_tb(int num_clocks/*args*/) // Copy and use the template files to cre
     // Replace the symbols in the new files with the appropriate values
     ReplaceSymbolsInNewFile(VcdDoTemplate,  VcdDoTb,    {"$", "@"}, {SourceName, vcdRunTime});
     
-    ReplaceSymbolsInNewFile(TbTemplate,     TbVhd,      {"$"}, {SourceName});
+    ReplaceSymbolsInNewFile(TbTemplate,     TbVhd,      {"$"},      {SourceName});
     
-    ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?p", "?s", "?k"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod,
-                            type_state.str(), "\"" + filesystem::absolute(ProjectFolder).string() + SourceName + ".kis" + "\""});
+    ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, type_state.str(), to_string(testarray.size()-1), "\0"},
+                            "?q");
         
     // Close the files
     VcdDoTemplate.close();
@@ -474,6 +484,7 @@ void create_tb(int num_clocks/*args*/) // Copy and use the template files to cre
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
+/* Overload number 1*/
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements)
 { // Replaces "symbols" with "replacements" in the file
     string line;
@@ -490,6 +501,37 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
     }
 }
 
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+/* Overload number 2*/
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol)
+{ 
+    string line;
+    size_t pos;
+    while (getline(srcfile, line))
+    {
+        for (size_t i = 0; i < symbols.size(); i++)
+        {
+            pos = line.find(symbols[i]);
+            if (pos != string::npos)
+            {
+                if (symbols[i] == triggerSymbol)
+                    {
+                        for(int j = 0; j < testarray.size(); j++)
+                        {
+                            dstfile << testarray[j];
+                            if(j < testarray.size()-1)
+                                dstfile << "," << endl;
+                        }
+                        line = "";
+                    }
+                else
+                    line.replace(pos, symbols[i].length(), replacements[i]);
+            }
+        }
+        dstfile << line << endl;
+    }
+}
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void Return2Beginning(ifstream &file) // Return to the beginning of the file
@@ -523,3 +565,4 @@ void SetWorkingDirectory() // Set the working directory to the exe location
     // Set the working directory to the executable location
     filesystem::current_path(exePath);
 }
+
