@@ -2,11 +2,13 @@
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 Project:        FSM-Power-Tool
+File:           kis2vhd.cpp
 Authors:        Boris Karasov, Reshef Schachter
 Date:           2023-2024
 Institution:    Afeka College of Engineering
-Description:    This is the main file for our bachelor degree in Electrical Engineering final project.
-Notes:          This is meant to work with a VHDL2008 compiler ONLY!
+Description:    This is our final project for our Bachelor's degree in Electrical Engineering.
+Notes:          The project is meant to work with a VHDL2008 compiler and a C++17 compiler.
+File Description: This file is the main file of the project. It is resposible for parsing KIS to VHDL and optimizing the FSM.
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------**/
@@ -168,7 +170,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         destin << "\t\t" << "if(rst = '1') then" << endl;
         destin << "\t\t\t" << "st\t<=\tst0;" << endl;
         destin << "\t\t\t" << "z <= (" << find_cfsm("st0") << " => '1', others => '0');" << endl;
-        destin << "\t\t" << "elsif falling_edge(clk(" << j << ")) then" << endl;
+        destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
@@ -557,7 +559,7 @@ void CreateSubFolders() // Create the necessary subfolders
 void SetWorkingDirectory() // Set the working directory to the exe location
 {
     using namespace std;
-   // Get the full path of the executable
+    // Get the full path of the executable
     char buffer[MAX_PATH];
     GetModuleFileNameA(NULL, buffer, MAX_PATH);
     string::size_type pos = string(buffer).find_last_of("\\/");

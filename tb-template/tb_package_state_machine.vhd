@@ -1,3 +1,18 @@
+/**-------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+Project:        FSM-Power-Tool
+File:           tb_package_state_machine.vhd
+Authors:        Boris Karasov, Reshef Schachter
+Date:           2023-2024
+Institution:    Afeka College of Engineering
+Description:    This is our final project for our Bachelor's degree in Electrical Engineering.
+Notes:          The project is meant to work with a VHDL2008 compiler and a C++17 compiler.
+File Description: This file is the testbench package, and should be used with the main test bench file.
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------**/
+
 library ieee;
 use ieee.std_logic_1164.all;
 
