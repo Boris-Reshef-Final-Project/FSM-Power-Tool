@@ -18,6 +18,15 @@ int input, output, NP, states;       // NP is (מספר שורות) ;         ->
 stringstream type_state;
 vector<string> State_list;
 
+// Structure to store results
+struct Result {
+    vector<string> cfsm0;
+    vector<string> cfsm1;
+    double pt1;
+    double pt2;
+    double sum_pt;
+};
+
 int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest);
 void MakeIODecleration(ifstream &source, ofstream &dest);
 void MakeTypeState(ifstream &source, ofstream &dest);
@@ -26,9 +35,13 @@ void Fill_state_product(ifstream &source, ofstream &dest);
 bool isStringInVector(const string &str, const vector<string> &vec);
 int find_cfsm(string state);
 void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
-void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm);
+void Optimiser_Min_trans_prob(
+    const vector<Result>& min_pt1_vector,
+    const vector<Result>& min_pt2_vector,
+    const vector<Result>& min_sum_pt_vector,
+    vector<vector<string>>& cfsm);
 void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
-
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap);
 
 
 
@@ -50,6 +63,10 @@ unordered_map<string, unordered_map<string, double>> map_state_prob(
 vector<double> calc_product_prob(const vector<state_product>& stateProducts);
 
 vector<vector<string>> cfsm; // Vector to store the states of each cfsm
+
+vector<vector<vector<string>>> Allcfsms_AndProbabilities; // Each element will be a vector of 2 vectors of strings and 2 doubles
+
+
 
 int main()
 {
@@ -119,7 +136,9 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
 
     calc_state_prob_V1(stateProbMap, State_list, states);
 
- auto transitionProbMap = map_state_prob(stateProducts, stateProbMap, productProbabilities);
+    
+    auto transitionProbMap = map_state_prob(stateProducts, stateProbMap, productProbabilities);
+    
 
     // Print the transition probability map
     for (const auto& si : stateProbMap) {
@@ -127,6 +146,16 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
             cout << si.first << " -> " << sj.first << ": " << transitionProbMap[si.first][sj.first] << endl;
         }
     }
+
+
+
+/*============================================================*/
+
+/*                   For The Optimiser                        */
+
+/*============================================================*/
+
+
 
 
     MakeTypeState(source, dest); // type state is (st0, st1, st2,..., st12);
@@ -139,8 +168,8 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &dest) // Main Pars
     cin >> Opt;
     if (Opt == 1)
         Optimiser_Axe(source, cfsm); // Located After (Fill_state_product) && Before (FSM2Process) √√√√√√√√√
-    else
-        Optimiser_Min_trans_prob(cfsm);
+    else if (Opt ==2)
+    find_best_probabilities(states, transitionProbMap);
 
     int j;
     for (j = 0; j < CfsmAmount; j++)
@@ -501,10 +530,212 @@ unordered_map<string, unordered_map<string, double>> map_state_prob(
 }
 
 
-void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs)
-{
+bool compare_pt1(const Result& a, const Result& b) {
+    return a.pt1 < b.pt1;
 }
 
-void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm)
-{
+bool compare_pt2(const Result& a, const Result& b) {
+    return a.pt2 < b.pt2;
 }
+
+bool compare_sum_pt(const Result& a, const Result& b) {
+    return a.sum_pt < b.sum_pt;
+}
+
+// Function to update the top 5 results
+template <typename Compare>
+void update_top_results(vector<Result>& results, const Result& new_result, Compare comp) {
+    if (results.size() < 5) {
+        results.push_back(new_result);
+    } else {
+        if (comp(new_result, results.back())) {
+            results.back() = new_result;
+        }
+    }
+    sort(results.begin(), results.end(), comp);
+}
+
+// Recursive function to generate combinations and find best probabilities
+void find_best_probabilities_recursive(
+    const vector<string>& state_list,
+    vector<string>& current_comb,
+    vector<string>& remaining_elements,
+    size_t index,
+    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
+    vector<Result>& min_pt1_vector,
+    vector<Result>& min_pt2_vector,
+    vector<Result>& min_sum_pt_vector) {
+
+    if (current_comb.size() == state_list.size() / 2) {
+        remaining_elements.clear();
+        for (const auto& state : state_list) {
+            if (find(current_comb.begin(), current_comb.end(), state) == current_comb.end()) {
+                remaining_elements.push_back(state);
+            }
+        }
+
+        double pt1 = 0.0;
+        double pt2 = 0.0;
+
+        for (const auto& cs : current_comb) {
+            for (const auto& ns : remaining_elements) {
+                pt1 += transitionProbMap.at(cs).at(ns);
+                pt2 += transitionProbMap.at(ns).at(cs);
+            }
+        }
+
+        double sum_pt = pt1 + pt2;
+
+        Result result = {current_comb, remaining_elements, pt1, pt2, sum_pt};
+
+        update_top_results(min_pt1_vector, result, compare_pt1);
+        update_top_results(min_pt2_vector, result, compare_pt2);
+        update_top_results(min_sum_pt_vector, result, compare_sum_pt);
+
+        return;
+    }
+
+    if (index >= state_list.size()) {
+        return;
+    }
+
+    // Include current index in the combination
+    current_comb.push_back(state_list[index]);
+    find_best_probabilities_recursive(state_list, current_comb, remaining_elements, index + 1, transitionProbMap, min_pt1_vector, min_pt2_vector, min_sum_pt_vector);
+    current_comb.pop_back();
+
+    // Exclude current index from the combination
+    find_best_probabilities_recursive(state_list, current_comb, remaining_elements, index + 1, transitionProbMap, min_pt1_vector, min_pt2_vector, min_sum_pt_vector);
+}
+
+void calculate_basic_probability(
+    const vector<string>& state_list,
+    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
+    vector<Result>& min_pt1_vector,
+    vector<Result>& min_pt2_vector,
+    vector<Result>& min_sum_pt_vector) {
+
+    vector<string> cfsm0(state_list.begin(), state_list.begin() + state_list.size() / 2);
+    vector<string> cfsm1(state_list.begin() + state_list.size() / 2, state_list.end());
+
+    double pt1 = 0.0;
+    double pt2 = 0.0;
+
+    for (const auto& cs : cfsm0) {
+        for (const auto& ns : cfsm1) {
+            pt1 += transitionProbMap.at(cs).at(ns);
+            pt2 += transitionProbMap.at(ns).at(cs);
+        }
+    }
+
+    double sum_pt = pt1 + pt2;
+
+    Result basic_result = {cfsm0, cfsm1, pt1, pt2, sum_pt};
+
+  // Print the basic probability
+    cout << "Basic probability:" << endl;
+    cout << "{cfsm0={";
+    for (const auto& s : basic_result.cfsm0) cout << s << ",";
+    cout << "}, cfsm1={";
+    for (const auto& s : basic_result.cfsm1) cout << s << ",";
+    cout << "}, pt1=" << basic_result.pt1 << ", pt2=" << basic_result.pt2 << ", sum_pt=" << basic_result.sum_pt << "}" << endl;
+
+    update_top_results(min_pt1_vector, basic_result, compare_pt1);
+    update_top_results(min_pt2_vector, basic_result, compare_pt2);
+    update_top_results(min_sum_pt_vector, basic_result, compare_sum_pt);
+}
+
+// Function to find the best probabilities using the recursive helper
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap) {
+    vector<string> state_list;
+    for (int i = 0; i < states; ++i) {
+        state_list.push_back("st" + to_string(i));
+    }
+
+    vector<string> current_comb;
+    vector<string> remaining_elements;
+
+    vector<Result> min_pt1_vector;
+    vector<Result> min_pt2_vector;
+    vector<Result> min_sum_pt_vector;
+
+    calculate_basic_probability(state_list, transitionProbMap, min_pt1_vector, min_pt2_vector, min_sum_pt_vector);
+
+    find_best_probabilities_recursive(state_list, current_comb, remaining_elements, 0, transitionProbMap, min_pt1_vector, min_pt2_vector, min_sum_pt_vector);
+
+    // Print the best results
+    cout << "Best results for min_pt1:" << endl;
+    for (const auto& res : min_pt1_vector) {
+        cout << "{cfsm0={";
+        for (const auto& s : res.cfsm0) cout << s << ",";
+        cout << "}, cfsm1={";
+        for (const auto& s : res.cfsm1) cout << s << ",";
+        cout << "}, pt1=" << res.pt1 << ", pt2=" << res.pt2 << ", sum_pt=" << res.sum_pt << "}" << endl;
+    }
+
+    cout << "Best results for min_pt2:" << endl;
+    for (const auto& res : min_pt2_vector) {
+        cout << "{cfsm0={";
+        for (const auto& s : res.cfsm0) cout << s << ",";
+        cout << "}, cfsm1={";
+        for (const auto& s : res.cfsm1) cout << s << ",";
+        cout << "}, pt1=" << res.pt1 << ", pt2=" << res.pt2 << ", sum_pt=" << res.sum_pt << "}" << endl;
+    }
+
+    cout << "Best results for min_sum_pt:" << endl;
+    for (const auto& res : min_sum_pt_vector) {
+        cout << "{cfsm0={";
+        for (const auto& s : res.cfsm0) cout << s << ",";
+        cout << "}, cfsm1={";
+        for (const auto& s : res.cfsm1) cout << s << ",";
+        cout << "}, pt1=" << res.pt1 << ", pt2=" << res.pt2 << ", sum_pt=" << res.sum_pt << "}" << endl;
+    }
+
+    Optimiser_Min_trans_prob(min_pt1_vector, min_pt2_vector, min_sum_pt_vector, cfsm);
+
+}
+
+
+void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs)
+{
+    
+}
+
+void Optimiser_Min_trans_prob(
+    const vector<Result>& min_pt1_vector,
+    const vector<Result>& min_pt2_vector,
+    const vector<Result>& min_sum_pt_vector,
+    vector<vector<string>>& cfsm) {
+
+    const vector<Result>* vectors[] = {&min_pt1_vector, &min_pt2_vector, &min_sum_pt_vector};
+    double min_score = numeric_limits<double>::max();
+    const Result* best_result = nullptr;
+
+    for (const auto& vec : vectors) {
+        for (const auto& res : *vec) {
+            double score = res.pt1 * 10 + res.pt2 * 10 + res.sum_pt;
+            if (score < min_score) {
+                min_score = score;
+                best_result = &res;
+            }
+        }
+    }
+
+    if (best_result) {
+        cfsm.push_back(best_result->cfsm0);
+        cfsm.push_back(best_result->cfsm1);
+    }
+
+     // Print the chosen CFSM
+    cout << "Chosen CFSM:" << endl;
+    for (const auto& group : cfsm) {
+        cout << "{ ";
+        for (const auto& state : group) {
+            cout << state << " ";
+        }
+        cout << "}" << endl;
+    }
+
+}
+
+
