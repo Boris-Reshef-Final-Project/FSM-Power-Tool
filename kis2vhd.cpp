@@ -39,6 +39,22 @@ using namespace std;
 /*      Global Declarations      */
 /*===============================*/
 
+// Structure to store results
+struct Result {
+    vector<string> cfsm0;
+    vector<string> cfsm1;
+    double pt1;
+    double pt2;
+    double sum_pt;
+    };
+
+struct state_product
+{
+    string x;
+    string cs;
+    string ns;
+    string y;
+};
 
 vector<state_product> stateProducts;
 vector<vector<string>> cfsm; // Vector to store the states of each cfsm
@@ -68,44 +84,47 @@ void Fill_state_product(ifstream &source, ofstream &destin);
 bool isStringInVector(const string &str, const vector<string> &vec);
 int  find_cfsm(string state);
 void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
+void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs);
+void create_tb(int num_clocks);
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol);
+void Return2Beginning(ifstream &file);
+vector<double> calc_product_prob(const vector<state_product>& stateProducts);
+void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
+unordered_map<string, unordered_map<string, double>> map_state_prob(
+    const vector<state_product>& stateProducts, 
+    const unordered_map<string, double>& stateProbMap,
+    const vector<double>& productProbabilities);
+bool compare_pt1(const Result& a, const Result& b);
+bool compare_pt2(const Result& a, const Result& b);
+bool compare_sum_pt(const Result& a, const Result& b);
+template <typename Compare>
+void update_top_results(vector<Result>& results, const Result& new_result, Compare comp);
+void find_best_probabilities_recursive(
+    const vector<string>& state_list,
+    vector<string>& current_comb,
+    vector<string>& remaining_elements,
+    size_t index,
+    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
+    vector<Result>& min_pt1_vector,
+    vector<Result>& min_pt2_vector,
+    vector<Result>& min_sum_pt_vector);
+void calculate_basic_probability(
+    const vector<string>& state_list,
+    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
+    vector<Result>& min_pt1_vector,
+    vector<Result>& min_pt2_vector,
+    vector<Result>& min_sum_pt_vector);
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap);
+void SetWorkingDirectory();
 void Optimiser_Min_trans_prob(
     const vector<Result>& min_pt1_vector,
     const vector<Result>& min_pt2_vector,
     const vector<Result>& min_sum_pt_vector,
     vector<vector<string>>& cfsm);
-void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
-void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap);
-void create_tb(int num_clocks);
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol);
-void Return2Beginning(ifstream &file);
 void CreateSubFolders();
-void SetWorkingDirectory();
-string PrintProducts(int i);
 
 
-// Structure to store results
-struct Result {
-    vector<string> cfsm0;
-    vector<string> cfsm1;
-    double pt1;
-    double pt2;
-    double sum_pt;
-    };
-
-struct state_product
-{
-    string x;
-    string cs;
-    string ns;
-    string y;
-};
-
-
-
-vector<state_product> stateProducts;
-
-vector<vector<string>> cfsm; // Vector to store the states of each cfsm
 
 int main()
 {
@@ -113,7 +132,7 @@ int main()
     // Get destination and source files from user
     cout << "\nEnter the path of the source file: " << endl;
     getline(cin, ProjectFolder);
-    cout << "\nEnter file name: " << endl;
+    std::cout << "\nEnter file name: " << std::endl;
     getline(cin, SourceName);
 
     // Open source and destin files
@@ -215,8 +234,9 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     cout << endl;
     if (Opt == "1")
         Optimiser_Axe(source, cfsm); // Located After (Fill_state_product) && Before (FSM2Process) √√√√√√√√√
-    else if (Opt ==2)
-    find_best_probabilities(states, transitionProbMap);
+    else if (Opt == "2")
+        find_best_probabilities(states, transitionProbMap);
+    
 
     for (j = 0; j < CfsmAmount; j++)
     {
@@ -471,13 +491,7 @@ void calculate_transition_probabilities_V1(const vector<state_product> &statePro
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void Optimiser_Min_trans_prob(vector<vector<string>> &cfsm)
-{
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-void create_tb(int num_clocks/*args*/) // Copy and use the template files to create the testbench
+void create_tb(int num_clocks) // Copy and use the template files to create the testbench
 {
     /*  symbols: $ = source name,  @ = vcd run time, ?<char> = replace parameter with number from cpp file
         template files: vcdrun.do, tb_state_machine.vhd, tb_package_state_machine.vhd
@@ -598,7 +612,6 @@ void Return2Beginning(ifstream &file) // Return to the beginning of the file
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-}
 
 vector<double> calc_product_prob(const vector<state_product>& stateProducts) {
     vector<double> probabilities;
@@ -818,11 +831,6 @@ void find_best_probabilities(int states, const unordered_map<string, unordered_m
 
 }
 
-
-void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs)
-{
-}
-
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void SetWorkingDirectory() // Set the working directory to the exe location
@@ -872,4 +880,14 @@ void Optimiser_Min_trans_prob(
         }
         cout << "}" << endl;
     }
+}
+
+void CreateSubFolders() // Create the necessary subfolders
+{
+    // Destination folder
+    if (!filesystem::exists(destinationFolder))
+        filesystem::create_directory(destinationFolder);
+    // Subfolder for the specific source
+    if (!filesystem::exists(destinationFolder + "\\" + SourceName))
+        filesystem::create_directory(destinationFolder + "\\" + SourceName);
 }
