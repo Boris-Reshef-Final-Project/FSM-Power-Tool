@@ -2,4 +2,7 @@
 *.json
 *.kis
 *.vhd
+*.docx
 optimised/*
+dest.vhd
+state_machine.vhd
