@@ -2,6 +2,8 @@
 -- We're taking the risk of having glitches here (b/c of clock timing for wait states)
 -- but it's a trade worth having instead of having worse tpd.
 
+-- Need to do a double over this file to make sure everything works as expected.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
@@ -13,6 +15,7 @@ port(
 	clk		: in	std_logic_vector(1 downto 0);
 	x		: in	std_logic_vector(2 downto 0);
 	y		: out	std_logic_vector(4 downto 0)
+	-- need to add clock enable outputs
 );
 end entity dk14;
 
