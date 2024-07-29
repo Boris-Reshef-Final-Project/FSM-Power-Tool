@@ -78,7 +78,7 @@ int input, output, products, states;        // Number of inputs, outputs, produc
 
 int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin);
 void MakeIODecleration(ifstream &source, ofstream &destin);
-void MakeTypeState(ifstream &source, ofstream &destin);
+void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm);
 void FSM2Process(int j, ofstream &destin);
 void Fill_state_product(ifstream &source, ofstream &destin);
 bool isStringInVector(const string &str, const vector<string> &vec);
@@ -187,7 +187,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     MakeIODecleration(source, destin);
 
     
-    destin << "\t" << "z\t\t: out\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0)" << endl;
+    destin << "\t" << "clken\t: out\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0)" << endl;
     destin << ");" << endl;
     destin << "end entity " << SourceName << ";" << endl;
     destin << "\narchitecture arc_state_machine of " << SourceName << " is" << endl;
@@ -225,8 +225,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
 
 
-    MakeTypeState(source, destin); // Create the lines for the state type and signal st
-    destin << "begin" << endl << endl;
+    
 
     string Opt;
     cout << "Available Optimisers:\n\t1 - Optimiser_Axe\n\t2 - Optimiser_Min_trans_prob\nChoose an optimizer: ";
@@ -238,13 +237,34 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         find_best_probabilities(states, transitionProbMap);
     
 
+    MakeTypeState(source, destin, cfsm); // Create the lines for the state type and signal st
+    destin << "begin" << endl << endl;
+
     for (j = 0; j < CfsmAmount; j++)
     {
         destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
         destin << "\t\t" << "if(rst = '1') then" << endl;
-        destin << "\t\t\t" << "st\t<=\tst0;" << endl;
-        destin << "\t\t\t" << "z <= (" << find_cfsm("st0") << " => '1', others => '0');" << endl;
+        
+        switch (j)
+        {
+        case 0:
+            destin << "\t\t\t" << "s" << j << "\t<=\tst0;" << endl;
+            break;
+        
+        default:
+        destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+            break;
+        }
+                
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
+
+        if (j >= 0 && j < cfsm.size()) {
+        for (const std::string &state : cfsm[j]) {
+            int stateNumber = std::stoi(state.substr(2)); // Extract the number from the state string
+            destin << "\t\tz(" << stateNumber << ") := '0';" << std::endl;
+        }
+    }
+
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
@@ -252,6 +272,22 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         FSM2Process(j, destin); // Create the vhdl process for the current cfsm
 
         destin << "\t\t" << "end if;" << endl;
+        
+     if (j >= 0 && j < cfsm.size()) {
+    int otherCfsmIndex = (j == 0) ? 1 : 0; // Determine the other CFSM index
+    destin << "\tclken(" << otherCfsmIndex << ") <= ";
+    for (size_t i = 0; i < cfsm[otherCfsmIndex].size(); ++i) {
+        int stateNumber = std::stoi(cfsm[otherCfsmIndex][i].substr(2)); // Extract the number from the state string
+        destin << "z(" << stateNumber << ")";
+        if (i < cfsm[otherCfsmIndex].size() - 1) {
+            destin << " or ";
+        } else {
+            destin << ";" << std::endl;
+        }
+    }
+    }   
+
+
         destin << "\t" << "end process cfsm" << j << ";\n\n";
     }
 
@@ -315,6 +351,7 @@ void MakeIODecleration(ifstream &source, ofstream &destin)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
+/*
 void MakeTypeState(ifstream &source, ofstream &destin) // Write the values of the enum type state
 {
         type_state << "type state is (";
@@ -327,13 +364,55 @@ void MakeTypeState(ifstream &source, ofstream &destin) // Write the values of th
         type_state << ");" << endl;
         destin << "\t" << type_state.str();
         destin << "\tsignal st : state;" << endl;
+}*/
+
+void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm) {
+    ostringstream type_state;
+    int CfsmAmount = cfsm.size();
+    int states=0;
+    
+    for (const auto &v : cfsm) {
+        states += v.size();
+    }
+
+    // First part: type state_0
+    type_state << "\ntype state_0 is (";
+    for (int i = 0; i < cfsm[CfsmAmount - 2].size(); ++i) {
+        type_state << cfsm[CfsmAmount - 2][i];
+        if (i < cfsm[CfsmAmount - 2].size() - 1)
+            type_state << ", ";
+    }
+    type_state << ", st0_wait);" << endl;
+
+
+    // Second part: type state_1
+    type_state << "type state_1 is (";
+    for (int i = 0; i < cfsm[CfsmAmount - 1].size(); ++i) {
+        type_state << cfsm[CfsmAmount - 1][i];
+        if (i < cfsm[CfsmAmount - 1].size() - 1)
+            type_state << ", ";
+    }
+    type_state << ", st1_wait);" << endl;
+
+    // Adding signals
+    type_state << "signal s0 : state_0;" << endl;
+    type_state << "signal s1 : state_1;" << endl;
+
+    // Adding shared variables
+    for (int i = 1; i <= CfsmAmount; ++i) {
+        type_state << "shared variable y" << i << ": std_logic_vector(y'range);" << endl;
+    }
+    type_state << "shared variable z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n" << endl;
+
+    // Writing to the destination
+    destin << "\t" << type_state.str();
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void FSM2Process(int j, ofstream &destin)
 {
-    destin << "\t\t\t" << "case st is" << endl;
+    destin << "\t\t\t" << "case s" << j << " is" << endl;
     for (int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
     {
         destin << "\t\t\t\t" << "when " << cfsm[j][i] << " =>\n\n";
@@ -343,26 +422,55 @@ void FSM2Process(int j, ofstream &destin)
             if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
             {
                 destin << "\t\t\t\t\t\t" << "when \"" << stateProducts[k].x << "\" =>" << endl;
-                destin << "\t\t\t\t\t\t\t" << "st <= " << stateProducts[k].ns << ";" << endl;
+
+                if (isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state ***is*** in the current cfsm
+                destin << "\t\t\t\t\t\t\t" << "s" << j << " <= " << stateProducts[k].ns << ";" << endl;
 
                 string modified_y = stateProducts[k].y;
                 replace(modified_y.begin(), modified_y.end(), '-', OutputBitReplace);
 
-                destin << "\t\t\t\t\t\t\t" << "y <= \"" << modified_y << "\";" << endl;
+                destin << "\t\t\t\t\t\t\t" << "y" << j+1 << " <= \"" << modified_y << "\";" << endl;
                 if (!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                 {
-                    destin << "\t\t\t\t\t\t\t" << "z(" << j << ") <= '0';" << endl; // Disable current cfsm clock
-                    int z = find_cfsm(stateProducts[k].ns);
-                    destin << "\t\t\t\t\t\t\t" << "z(" << z << ") <= '1';" << endl; // Enable next cfsm clock
+                    int nextStateNumber = std::stoi(stateProducts[k].ns.substr(2));
+
+                    destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st"<<j<<"_wait;" << endl;
+                    
+                   
+
+                    destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") := '1';" << endl; // z(ns) = 1
+
                 }
             }
         }
         destin << "\t\t\t\t\t\t" << "when others => NULL;" << endl;
         destin << "\t\t\t\t\t" << "end case?;\n\n";
+
     }
-    destin << "\t\t\t\t" << "when others => NULL;" << endl;
+    destin << "\t\t\t\t" << "when st"<<j<<"_wait=>" << endl;
+
+    if (j >= 0 && j < cfsm.size()) {
+    destin << "\t\t\t\t\tif ";
+    for (size_t i = 0; i < cfsm[j].size(); ++i) {
+        int stateNumber = std::stoi(cfsm[j][i].substr(2)); // Extract the number from the state string
+        if (i == 0) {
+            destin << "(z(" << stateNumber << ")='1') then" << std::endl;
+        } else {
+            destin << "\t\t\t\t\telsif (z(" << stateNumber << ")='1') then" << std::endl;
+        }
+        destin << "\t\t\t\t\t\ts" << j << " <= " << cfsm[j][i] << ";" << std::endl;
+    }
+    destin << "\t\t\t\t\telse" << std::endl;
+    destin << "\t\t\t\t\t\ts" << j << " <= st" << j << "_wait;" << std::endl;
+    destin << "\t\t\t\t\tend if;" << std::endl;
+}
+
+    destin << "\t\t\t\t" << "when others => NULL;\n" << endl;
     destin << "\t\t\t" << "end case;" << endl;
 }
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
