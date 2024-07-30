@@ -125,6 +125,34 @@ void Optimiser_Min_trans_prob(
 void CreateSubFolders();
 
 
+map<int, string> primitive_polynomials = {
+    {2,  "1,0"        },
+    {3,  "2,1"        },
+    {4,  "3,2"        },
+    {5,  "4,3,2,1"    },
+    {6,  "5,4,2,1"    },
+    {7,  "6,5,4,3"    },
+    {8,  "7,5,4,3"    },
+    {9,  "8,7,5,4"    },
+    {10, "9,8,6,5"    },
+    {11, "10,9,8,6"   },
+    {12, "11,10,7,5"  },
+    {13, "12,11,9,8"  },
+    {14, "13,12,10,8" },
+    {15, "14,13,12,10"},
+    {16, "15,13,12,10"},
+    {17, "16,13,12,10"},
+    {18, "17,16,15,12"},
+    {19, "18,17,16,13"},
+    {20, "19,18,15,13"},
+    {21, "20,19,18,15"},
+    {22, "21,18,17,16"},
+    {23, "22,21,19,17"},
+    {24, "23,22,20,19"},
+    {25, "24,23,22,21"}
+};
+
+
 
 int main()
 {
@@ -259,9 +287,9 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
 
         if (j >= 0 && j < cfsm.size()) {
-        for (const std::string &state : cfsm[j]) {
-            int stateNumber = std::stoi(state.substr(2)); // Extract the number from the state string
-            destin << "\t\tz(" << stateNumber << ") := '0';" << std::endl;
+        for (const string &state : cfsm[1-j]) {
+            int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+            destin << "\t\tz(" << stateNumber << ") := '0';" << endl;
         }
     }
 
@@ -290,7 +318,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
         destin << "\t" << "end process cfsm" << j << ";\n\n";
     }
-
+    destin << "\ty <= y1 or y2;" << endl << endl;
     destin << "end arc_state_machine;" << endl;
     return 0;
 }
@@ -350,21 +378,6 @@ void MakeIODecleration(ifstream &source, ofstream &destin)
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-/*
-void MakeTypeState(ifstream &source, ofstream &destin) // Write the values of the enum type state
-{
-        type_state << "type state is (";
-        for (int i = 0; i < states; ++i)
-        {
-            type_state << State_list[i];
-            if (i < states - 1)
-                type_state << ", ";
-        }
-        type_state << ");" << endl;
-        destin << "\t" << type_state.str();
-        destin << "\tsignal st : state;" << endl;
-}*/
 
 void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm) {
     ostringstream type_state;
@@ -429,7 +442,7 @@ void FSM2Process(int j, ofstream &destin)
                 string modified_y = stateProducts[k].y;
                 replace(modified_y.begin(), modified_y.end(), '-', OutputBitReplace);
 
-                destin << "\t\t\t\t\t\t\t" << "y" << j+1 << " <= \"" << modified_y << "\";" << endl;
+                destin << "\t\t\t\t\t\t\t" << "y" << j+1 << " := \"" << modified_y << "\";" << endl;
                 if (!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                 {
                     int nextStateNumber = std::stoi(stateProducts[k].ns.substr(2));
@@ -593,30 +606,44 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs)
-{
-}
+
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void create_tb(int num_clocks) // Copy and use the template files to create the testbench
 {
     /*  symbols: $ = source name,  @ = vcd run time, ?<char> = replace parameter with number from cpp file
-        template files: vcdrun.do, tb_state_machine.vhd, tb_package_state_machine.vhd
-        new files: tb_$.vhd, tb_package_$.vhd, vcdrun_$.do
+        template files: vcdrun.do, tb_state_machine.vhd, tb_package_state_machine.vhd, top_template.vhd
+        new files: tb_$.vhd, tb_package_$.vhd, vcdrun_$.do, top_$.vhd
 
         Create new files in the destination folder
         test if the files are created successfully
         Copy the content of the template files to the new files
         Replace the symbols in the new files with the appropriate values */
 
+    // copy-paste the PLL file:
+    ifstream PLLFile(templateFolder + "\\PLL_altpll.vhd");
+    ofstream PLLCopy(NewLocation + "\\PLL_altpll.vhd");
+
+    // Check if the PLL_altpll.vhd file was opened successfully
+    if (!PLLFile || !PLLCopy)
+    {
+        cerr << "Error: Failed to open or create PLL_altpll.vhd file" << endl;
+        return;
+    }
+
+    // Copy the content of the file
+    PLLCopy << PLLFile.rdbuf();
+
     // Open the template files for read
-    ifstream VcdDoTemplate  (templateFolder + "\\vcdrun.do");
-    ifstream TbTemplate     (templateFolder + "\\tb_state_machine.vhd");
-    ifstream PackTemplate   (templateFolder + "\\tb_package_state_machine.vhd");
+    ifstream VcdDoTemplate   (templateFolder + "\\vcdrun.do");
+    ifstream TbTemplate      (templateFolder + "\\tb_state_machine.vhd");
+    ifstream PackTemplate    (templateFolder + "\\tb_package_state_machine.vhd");
+    ifstream TopTemplate     (templateFolder + "\\top_template.vhd");
+    ifstream TopPackTemplate (templateFolder + "\\top_pack_template.vhd");
 
     // Check if the template files were opened successfully
-    if (!VcdDoTemplate || !TbTemplate || !PackTemplate)
+    if (!VcdDoTemplate || !TbTemplate || !PackTemplate || !TopTemplate || !TopPackTemplate)
     {
         cerr << "Error: Failed to open template files" << endl;
         return;
@@ -626,9 +653,11 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     ofstream TbVhd       (NewLocation + "\\tb_" +         SourceName + ".vhd");
     ofstream TbPackageVhd(NewLocation + "\\tb_package_" + SourceName + ".vhd");
     ofstream VcdDoTb     (NewLocation + "\\vcdrun_" +     SourceName + ".do");
+    ofstream top_vhd     (NewLocation + "\\top_" +        SourceName + ".vhd");
+    ofstream top_pack    (NewLocation + "\\top_pack_" +   SourceName + ".vhd");
 
     // Check if the new files were created successfully
-    if (!TbVhd || !TbPackageVhd || !VcdDoTb)
+    if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack)
     {
         cerr << "Error: Failed to create new test-bench files. Reason: " << strerror(errno) << endl;
         return;
@@ -643,21 +672,31 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     getline(cin, clockPeriod);
 
     // Replace the symbols in the new files with the appropriate values
-    ReplaceSymbolsInNewFile(VcdDoTemplate,  VcdDoTb,    {"$", "@"}, {SourceName, vcdRunTime});
+    ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$", "@"}, {SourceName, vcdRunTime});
     
-    ReplaceSymbolsInNewFile(TbTemplate,     TbVhd,      {"$"},      {SourceName});
+    ReplaceSymbolsInNewFile(TbTemplate, TbVhd, {"$"}, {SourceName});
     
     ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
                             {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, type_state.str(), to_string(testarray.size()-1), "\0"},
                             "?q");
+    
+    ReplaceSymbolsInNewFile(TopTemplate, top_vhd, {"$", "?x", "?y", "?c"}, {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1)});
+
+    ReplaceSymbolsInNewFile(TopPackTemplate, top_pack, {"$", "?g"}, {SourceName, primitive_polynomials[input+1]});
         
     // Close the files
     VcdDoTemplate.close();
     TbTemplate.close();
     PackTemplate.close();
+    TopTemplate.close();
+    TopPackTemplate.close();
+    PLLFile.close();
     TbVhd.close();
     TbPackageVhd.close();
     VcdDoTb.close();
+    top_vhd.close();
+    top_pack.close();
+    PLLCopy.close();
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
