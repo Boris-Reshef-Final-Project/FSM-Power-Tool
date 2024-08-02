@@ -82,7 +82,7 @@ int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin);
 void MakeIODecleration(ifstream &source, ofstream &destin);
 void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm);
 void MakeTypeState2(ifstream &source, ofstream &dest);
-void FSM2Process(int j, ofstream &destin);
+void FSM2Process(int j, ofstream &destin, int CfsmAmount);
 void Fill_state_product(ifstream &source, ofstream &destin);
 bool isStringInVector(const string &str, const vector<string> &vec);
 int  find_cfsm(string state);
@@ -118,7 +118,7 @@ void calculate_basic_probability(
     vector<Result>& min_pt1_vector,
     vector<Result>& min_pt2_vector,
     vector<Result>& min_sum_pt_vector);
-void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap);
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap,int CfsmAmount);
 void SetWorkingDirectory();
 void Optimiser_Min_trans_prob(
     const vector<Result>& min_pt1_vector,
@@ -280,12 +280,21 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         Optimiser_Axe(source, cfsm); // Located After (Fill_state_product) && Before (FSM2Process) √√√√√√√√√
     else if (Opt == "2"){
         auto start = chrono::high_resolution_clock::now();
-        find_best_probabilities(states, transitionProbMap);
+        find_best_probabilities(states, transitionProbMap,CfsmAmount);
         auto end = chrono::high_resolution_clock::now();
         chrono::duration<double> duration = end - start;
         // Print the duration in seconds
         cout << "Time taken: " << duration.count() << " seconds" << endl;
     }
+    }
+    else if (CfsmAmount == 1){
+
+        vector<string> firstHalf;
+        cfsm.clear();
+    for (int i = 0; i < states; ++i) {
+        firstHalf.push_back(State_list[i]);
+    }  
+    cfsm.push_back(firstHalf);  
     }
 
     if (CfsmAmount == 2){
@@ -296,6 +305,8 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
 
     destin << "begin" << endl << endl;
+    if (CfsmAmount == 1)
+    destin << "\tclken(0) <= '1';" << endl;
 
     for (j = 0; j < CfsmAmount; j++)
     {
@@ -315,7 +326,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         }
 
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
-
+        if (CfsmAmount != 1){
         if (j >= 0 && j < cfsm.size())
         {
             for (const string &state : cfsm[1 - j])
@@ -323,15 +334,15 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                 int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
                 destin << "\t\tz(" << stateNumber << ") := '0';" << endl;
             }
-        }
+        }}
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
 
-        FSM2Process(j, destin); // Create the vhdl process for the current cfsm
+        FSM2Process(j, destin,CfsmAmount); // Create the vhdl process for the current cfsm
 
         destin << "\t\t" << "end if;" << endl;
-
+        if (CfsmAmount != 1){
         if (j >= 0 && j < cfsm.size())
         {
             int otherCfsmIndex = (j == 0) ? 1 : 0; // Determine the other CFSM index
@@ -349,11 +360,15 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                     destin << ";" << std::endl;
                 }
             }
-        }
+        }}
 
         destin << "\t" << "end process cfsm" << j << ";\n\n";
     }
+    if (CfsmAmount != 1)
     destin << "\ty <= y1 or y2;" << endl << endl;
+    else
+    destin << "\ty <= y1;" << endl << endl;
+    
     destin << "end arc_state_machine;" << endl;
     return 0;
 }
@@ -482,7 +497,7 @@ void MakeTypeState2(ifstream &source, ofstream &dest) // Write the values of the
 
             // Write signal declaration
             dest << "\tsignal s0 : state;" << endl;
-            dest << "shared variable y1: std_logic_vector(y'range);" << endl;
+            dest << "\tshared variable y1: std_logic_vector(y'range);" << endl;
 
 
         }
@@ -490,7 +505,7 @@ void MakeTypeState2(ifstream &source, ofstream &dest) // Write the values of the
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void FSM2Process(int j, ofstream &destin)
+void FSM2Process(int j, ofstream &destin,int CfsmAmount)
 {
     destin << "\t\t\t" << "case s" << j << " is" << endl;
     for (int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
@@ -527,8 +542,9 @@ void FSM2Process(int j, ofstream &destin)
         destin << "\t\t\t\t\t" << "end case?;\n\n";
 
     }
+    if (CfsmAmount != 1){
     destin << "\t\t\t\t" << "when st"<<j<<"_wait=>" << endl;
-
+    
     if (j >= 0 && j < cfsm.size()) {
     destin << "\t\t\t\t\tif ";
     for (size_t i = 0; i < cfsm[j].size(); ++i) {
@@ -543,7 +559,7 @@ void FSM2Process(int j, ofstream &destin)
     destin << "\t\t\t\t\telse" << std::endl;
     destin << "\t\t\t\t\t\ts" << j << " <= st" << j << "_wait;" << std::endl;
     destin << "\t\t\t\t\tend if;" << std::endl;
-}
+}}
 
     destin << "\t\t\t\t" << "when others => NULL;\n" << endl;
     destin << "\t\t\t" << "end case;" << endl;
@@ -996,11 +1012,12 @@ void calculate_basic_probability(
 }
 
 // Function to find the best probabilities using the recursive helper
-void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap) {
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap,int CfsmAmount) {
     vector<string> state_list;
     for (int i = 0; i < states; ++i) {
         state_list.push_back("st" + to_string(i));
     }
+    
 
     vector<string> current_comb;
     vector<string> remaining_elements;
@@ -1040,8 +1057,9 @@ void find_best_probabilities(int states, const unordered_map<string, unordered_m
         for (const auto& s : res.cfsm1) cout << s << ",";
         cout << "}, pt1=" << res.pt1 << ", pt2=" << res.pt2 << ", sum_pt=" << res.sum_pt << "}" << endl;
     }
-
+    
     Optimiser_Min_trans_prob(min_pt1_vector, min_pt2_vector, min_sum_pt_vector, cfsm);
+    
 
 }
 
