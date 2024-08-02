@@ -28,6 +28,7 @@ File Description: This file is the main file of the project. It is resposible fo
 #include <Windows.h>
 #include <libloaderapi.h>
 #include <functional>
+#include <chrono>
 
 #define OutputBitReplace '0'
 
@@ -61,9 +62,10 @@ vector<vector<string>> cfsm; // Vector to store the states of each cfsm
 state_product sp; // Create a Global state_product instance
 string ProjectFolder;
 string SourceName;
-string NewLocation;
+string NewLocation,NewLocation2;
 string templateFolder    = "tb-template";   // Name of template folder
 string destinationFolder = "optimised";     // Name of destination folder
+string destinationFolder2 = "not-optimised";
 stringstream type_state;                    // String stream to store the type state line
 vector<string> State_list;                  // Vector to store the state names
 vector<string> testarray;                   // Vector to test array for the TB
@@ -79,6 +81,7 @@ int input, output, products, states;        // Number of inputs, outputs, produc
 int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin);
 void MakeIODecleration(ifstream &source, ofstream &destin);
 void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm);
+void MakeTypeState2(ifstream &source, ofstream &dest);
 void FSM2Process(int j, ofstream &destin);
 void Fill_state_product(ifstream &source, ofstream &destin);
 bool isStringInVector(const string &str, const vector<string> &vec);
@@ -168,6 +171,7 @@ int main()
     ifstream source(ProjectFolder + SourceName + ".kis");
     NewLocation = ProjectFolder + "\\" + destinationFolder + "\\" + SourceName;
     ofstream destin(NewLocation + "\\" + SourceName + ".vhd");
+    
 
     if (!source)
     {
@@ -181,8 +185,21 @@ int main()
     }
 
     int CfsmAmount = 2; // Default value
-    // cout << "insert amount of cfsm's :" << endl; // These lines are for if we decide to allow more than 2 cfsm's
-    // cin >> CfsmAmount;
+   
+    KissFiles2Vhd(CfsmAmount, source, destin); // Preform the parsing process
+
+    create_tb(CfsmAmount); // Create the testbench files
+
+
+    destin.close();
+
+    CfsmAmount = 1;
+    
+    NewLocation2 = ProjectFolder + "\\" + destinationFolder2 + "\\" + SourceName;
+    destin.open(NewLocation2 + "\\" + SourceName + ".vhd");
+
+    source.clear();
+    source.seekg(0, ios::beg); // Return to the beginning of the file
 
     KissFiles2Vhd(CfsmAmount, source, destin); // Preform the parsing process
 
@@ -254,18 +271,30 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
 
     
-
+    if (CfsmAmount != 1){
     string Opt;
     cout << "Available Optimisers:\n\t1 - Optimiser_Axe\n\t2 - Optimiser_Min_trans_prob\nChoose an optimizer: ";
     getline(cin, Opt);
     cout << endl;
     if (Opt == "1")
         Optimiser_Axe(source, cfsm); // Located After (Fill_state_product) && Before (FSM2Process) √√√√√√√√√
-    else if (Opt == "2")
+    else if (Opt == "2"){
+        auto start = chrono::high_resolution_clock::now();
         find_best_probabilities(states, transitionProbMap);
-    
+        auto end = chrono::high_resolution_clock::now();
+        chrono::duration<double> duration = end - start;
+        // Print the duration in seconds
+        cout << "Time taken: " << duration.count() << " seconds" << endl;
+    }
+    }
 
-    MakeTypeState(source, destin, cfsm); // Create the lines for the state type and signal st
+    if (CfsmAmount == 2){
+    MakeTypeState(source, destin, cfsm);} // Create the lines for the state type and signal st
+    else if (CfsmAmount == 1){
+    MakeTypeState2(source, destin);    
+    }
+
+
     destin << "begin" << endl << endl;
 
     for (j = 0; j < CfsmAmount; j++)
@@ -426,6 +455,38 @@ void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<strin
     // Writing to the destination
     destin << "\t" << type_state.str();
 }
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+void MakeTypeState2(ifstream &source, ofstream &dest) // Write the values of the enum type state
+{
+    if (source.is_open() && dest.is_open())
+    {
+
+       
+       
+            type_state << "\t" << "type state is (";
+            for (int i = 0; i < states; ++i)
+            {
+
+                type_state << State_list[i];
+                if (i < states - 1)
+                {
+
+                    type_state << ", ";
+                }
+            }
+
+            type_state << ");" << endl;
+            dest << type_state.str();
+
+            // Write signal declaration
+            dest << "\tsignal s0 : state;" << endl;
+            dest << "shared variable y1: std_logic_vector(y'range);" << endl;
+
+
+        }
+    }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -1043,4 +1104,13 @@ void CreateSubFolders() // Create the necessary subfolders
     // Subfolder for the specific source
     if (!filesystem::exists(destinationFolder + "\\" + SourceName))
         filesystem::create_directory(destinationFolder + "\\" + SourceName);
+
+    if (!filesystem::exists(destinationFolder2))
+        filesystem::create_directory(destinationFolder2);
+    // Subfolder for the specific source
+    if (!filesystem::exists(destinationFolder2 + "\\" + SourceName))
+        filesystem::create_directory(destinationFolder2 + "\\" + SourceName);
+
+
+
 }
