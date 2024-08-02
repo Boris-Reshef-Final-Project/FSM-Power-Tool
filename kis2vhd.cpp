@@ -270,29 +270,31 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
     for (j = 0; j < CfsmAmount; j++)
     {
-        destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
+        destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n"
+               << endl;
         destin << "\t\t" << "if(rst = '1') then" << endl;
-        
+
         switch (j)
         {
         case 0:
             destin << "\t\t\t" << "s" << j << "\t<=\tst0;" << endl;
             break;
-        
+
         default:
-        destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+            destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
             break;
         }
-                
+
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
 
-        if (j >= 0 && j < cfsm.size()) {
-        for (const string &state : cfsm[1-j]) {
-            int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
-            destin << "\t\tz(" << stateNumber << ") := '0';" << endl;
+        if (j >= 0 && j < cfsm.size())
+        {
+            for (const string &state : cfsm[1 - j])
+            {
+                int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                destin << "\t\tz(" << stateNumber << ") := '0';" << endl;
+            }
         }
-    }
-
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
@@ -300,21 +302,25 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         FSM2Process(j, destin); // Create the vhdl process for the current cfsm
 
         destin << "\t\t" << "end if;" << endl;
-        
-     if (j >= 0 && j < cfsm.size()) {
-    int otherCfsmIndex = (j == 0) ? 1 : 0; // Determine the other CFSM index
-    destin << "\tclken(" << otherCfsmIndex << ") <= ";
-    for (size_t i = 0; i < cfsm[otherCfsmIndex].size(); ++i) {
-        int stateNumber = std::stoi(cfsm[otherCfsmIndex][i].substr(2)); // Extract the number from the state string
-        destin << "z(" << stateNumber << ")";
-        if (i < cfsm[otherCfsmIndex].size() - 1) {
-            destin << " or ";
-        } else {
-            destin << ";" << std::endl;
-        }
-    }
-    }   
 
+        if (j >= 0 && j < cfsm.size())
+        {
+            int otherCfsmIndex = (j == 0) ? 1 : 0; // Determine the other CFSM index
+            destin << "\tclken(" << otherCfsmIndex << ") <= ";
+            for (size_t i = 0; i < cfsm[otherCfsmIndex].size(); ++i)
+            {
+                int stateNumber = std::stoi(cfsm[otherCfsmIndex][i].substr(2)); // Extract the number from the state string
+                destin << "z(" << stateNumber << ")";
+                if (i < cfsm[otherCfsmIndex].size() - 1)
+                {
+                    destin << " or ";
+                }
+                else
+                {
+                    destin << ";" << std::endl;
+                }
+            }
+        }
 
         destin << "\t" << "end process cfsm" << j << ";\n\n";
     }

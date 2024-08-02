@@ -14,7 +14,7 @@ use cycloneive_components.all;
 
 entity top_$ is
     generic (
-        simulation_mode : boolean := false;
+        simulation      : boolean := false;
         power_analyzer  : boolean := true;
         baseline_power  : boolean := false;
         full_fpga       : boolean := false;
@@ -22,9 +22,9 @@ entity top_$ is
     );
     port(
         rst	    : in	std_logic := '1';
-        clk	: in    std_logic;
+        clk	    : in    std_logic;
         x		: in	std_logic_vector(?x downto 0) := (others => '0');
-        y		: out	std_logic_vector(?y downto 0) := (others => '0')	
+        y		: out	std_logic_vector(?y downto 0)	
     );
     -- Connect the pins to the FPGA for tests on the board
     attribute altera_chip_pin_lc              : string;
@@ -36,7 +36,7 @@ entity top_$ is
     
 architecture arc_top of top_$ is
     
-        signal clken, clk_out, S, PLL_clk	: std_logic_vector(?c downto 0) := (0 => '1', others => '0');
+        signal clken, clk_out	: std_logic_vector(?c downto 0) := (0 => '1', others => '0');
         signal LFSR_out  : std_logic_vector(x'range) := (others => '1');
         signal fsm_input : std_logic_vector(x'range) := (others => '0');
     
@@ -74,7 +74,6 @@ architecture arc_top of top_$ is
                         clken	=> open
                         );
             end generate G_FSM_LOOP;
-            
         end generate G_MANY_FSMS;
 
         -- generate PLLs
@@ -92,15 +91,12 @@ architecture arc_top of top_$ is
         -- generate LFSR
         -- Used in: baseline_power, full_fpga
         G_LFSR: if (baseline_power or full_fpga) generate
-            process(clk) is
+            process(clk, rst) is
             begin
                 if (rst = '1') then
                     LFSR_out <= (others => '1');
                 elsif rising_edge(clk) then
                     LFSR_out <= LFSR(LFSR_out, c_polynom);
-                    if (baseline_power) then -- to make sure the LFSR is actually driving something
-                        fsm_input <= y;
-                    end if;
                 end if;
             end process;
         end generate G_LFSR;
