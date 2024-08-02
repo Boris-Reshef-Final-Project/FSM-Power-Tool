@@ -163,7 +163,7 @@ int main()
     // Get destination and source files from user
     cout << "\nEnter the path of the source file: " << endl;
     getline(cin, ProjectFolder);
-    std::cout << "\nEnter file name: " << std::endl;
+    cout << "\nEnter file name: " << endl;
     getline(cin, SourceName);
 
     // Open source and destin files
@@ -702,10 +702,15 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     // Copy the content of the file
     PLLCopy << PLLFile.rdbuf();
 
+    // Change operation based on the number of cfsm (optimised or not)
+    string dir_select  = (num_clocks == 1) ? NewLocation2 : NewLocation;
+    string file_select = (num_clocks == 1) ? "_not_optimised" : "";
+    
+    
     // Open the template files for read
     ifstream VcdDoTemplate   (templateFolder + "\\vcdrun.do");
-    ifstream TbTemplate      (templateFolder + "\\tb_state_machine.vhd");
-    ifstream PackTemplate    (templateFolder + "\\tb_package_state_machine.vhd");
+    ifstream TbTemplate      (templateFolder + "\\tb_state_machine" + file_select + ".vhd");
+    ifstream PackTemplate    (templateFolder + "\\tb_package_state_machine" + file_select + ".vhd");
     ifstream TopTemplate     (templateFolder + "\\top_template.vhd");
     ifstream TopPackTemplate (templateFolder + "\\top_pack_template.vhd");
 
@@ -717,11 +722,13 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     }
 
     // Create new files in the destination folder
-    ofstream TbVhd       (NewLocation + "\\tb_" +         SourceName + ".vhd");
-    ofstream TbPackageVhd(NewLocation + "\\tb_package_" + SourceName + ".vhd");
-    ofstream VcdDoTb     (NewLocation + "\\vcdrun_" +     SourceName + ".do");
-    ofstream top_vhd     (NewLocation + "\\top_" +        SourceName + ".vhd");
-    ofstream top_pack    (NewLocation + "\\top_pack_" +   SourceName + ".vhd");
+    ofstream TbVhd       (dir_select + "\\tb_" +         SourceName + ".vhd");
+    ofstream TbPackageVhd(dir_select + "\\tb_package_" + SourceName + ".vhd");
+    ofstream VcdDoTb     (dir_select + "\\vcdrun_" +     SourceName + ".do");
+    ofstream top_vhd     (dir_select + "\\top_" +        SourceName + ".vhd");
+    ofstream top_pack    (dir_select + "\\top_pack_" +   SourceName + ".vhd");
+
+    
 
     // Check if the new files were created successfully
     if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack)
@@ -1110,7 +1117,5 @@ void CreateSubFolders() // Create the necessary subfolders
     // Subfolder for the specific source
     if (!filesystem::exists(destinationFolder2 + "\\" + SourceName))
         filesystem::create_directory(destinationFolder2 + "\\" + SourceName);
-
-
 
 }

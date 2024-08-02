@@ -2,7 +2,7 @@
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 Project:        FSM-Power-Tool
-File:           tb_state_machine.vhd
+File:           tb_state_machine_not_optimised.vhd
 Authors:        Boris Karasov, Reshef Schachter
 Date:           2023-2024
 Institution:    Afeka College of Engineering
@@ -15,7 +15,7 @@ File Description: This file is the testbench for the state machine. It is a univ
 -------------------------------------------------------------------------------------------------------------------------------**/
 
 
--- THIS IS FOR THE OPTIMIZED VERSION!!!!
+-- THIS IS FOR THE NOT-OPTIMISED VERSION!!!!
 
 
 library ieee;
