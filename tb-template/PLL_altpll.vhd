@@ -43,8 +43,9 @@ USE altera_mf.all;
 ENTITY PLL_altpll IS
 	PORT
 	(
-		inclk0		: IN STD_LOGIC  := '0';
-		c0		: OUT STD_LOGIC 
+		inclk0	: IN  STD_LOGIC  	:= '0';
+		clken	: IN  STD_LOGIC 	:= '0';
+		clk_out	: OUT STD_LOGIC
 	);
 END PLL_altpll;
 
@@ -58,6 +59,10 @@ ARCHITECTURE SYN OF pll_altpll IS
 	SIGNAL sub_wire3	: STD_LOGIC_VECTOR (4 DOWNTO 0);
 	SIGNAL sub_wire4	: STD_LOGIC ;
 
+	-- User added signals
+	SIGNAL s	: STD_LOGIC;
+	SIGNAL c0	: STD_LOGIC;
+	------------------------
 
 
 	COMPONENT altpll
@@ -124,6 +129,20 @@ ARCHITECTURE SYN OF pll_altpll IS
 	END COMPONENT;
 
 BEGIN
+
+
+	-- User added enable logic
+
+	Process(c0, clken) is
+	begin
+		if (c0 = '0') then
+			s <= clken;
+		end if;
+	end process;
+	clk_out <= c0 and s;
+	-----------------------------
+
+
 	sub_wire2_bv(0 DOWNTO 0) <= "0";
 	sub_wire2    <= To_stdlogicvector(sub_wire2_bv);
 	sub_wire0    <= inclk0;
@@ -139,7 +158,7 @@ BEGIN
 		clk0_multiply_by => 1,
 		clk0_phase_shift => "0",
 		compensate_clock => "CLK0",
-		inclk0_input_frequency => 10000,
+		inclk0_input_frequency => 20000,
 		intended_device_family => "Cyclone IV E",
 		lpm_hint => "CBX_MODULE_PREFIX=PLL_altpll",
 		lpm_type => "altpll",
@@ -218,7 +237,7 @@ END SYN;
 -- Retrieval info: PRIVATE: DEVICE_SPEED_GRADE STRING "Any"
 -- Retrieval info: PRIVATE: DIV_FACTOR0 NUMERIC "1"
 -- Retrieval info: PRIVATE: DUTY_CYCLE0 STRING "50.00000000"
--- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE0 STRING "100.000000"
+-- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE0 STRING "50.000000"
 -- Retrieval info: PRIVATE: EXPLICIT_SWITCHOVER_COUNTER STRING "0"
 -- Retrieval info: PRIVATE: EXT_FEEDBACK_RADIO STRING "0"
 -- Retrieval info: PRIVATE: GLOCKED_COUNTER_EDIT_CHANGED STRING "1"
@@ -226,7 +245,7 @@ END SYN;
 -- Retrieval info: PRIVATE: GLOCKED_MODE_CHECK STRING "0"
 -- Retrieval info: PRIVATE: GLOCK_COUNTER_EDIT NUMERIC "1048575"
 -- Retrieval info: PRIVATE: HAS_MANUAL_SWITCHOVER STRING "1"
--- Retrieval info: PRIVATE: INCLK0_FREQ_EDIT STRING "100.000"
+-- Retrieval info: PRIVATE: INCLK0_FREQ_EDIT STRING "50.000"
 -- Retrieval info: PRIVATE: INCLK0_FREQ_UNIT_COMBO STRING "MHz"
 -- Retrieval info: PRIVATE: INCLK1_FREQ_EDIT STRING "100.000"
 -- Retrieval info: PRIVATE: INCLK1_FREQ_EDIT_CHANGED STRING "1"
@@ -244,7 +263,7 @@ END SYN;
 -- Retrieval info: PRIVATE: MULT_FACTOR0 NUMERIC "1"
 -- Retrieval info: PRIVATE: NORMAL_MODE_RADIO STRING "1"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ0 STRING "100.00000000"
--- Retrieval info: PRIVATE: OUTPUT_FREQ_MODE0 STRING "1"
+-- Retrieval info: PRIVATE: OUTPUT_FREQ_MODE0 STRING "0"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT0 STRING "MHz"
 -- Retrieval info: PRIVATE: PHASE_RECONFIG_FEATURE_ENABLED STRING "1"
 -- Retrieval info: PRIVATE: PHASE_RECONFIG_INPUTS_CHECK STRING "0"
@@ -287,7 +306,7 @@ END SYN;
 -- Retrieval info: CONSTANT: CLK0_MULTIPLY_BY NUMERIC "1"
 -- Retrieval info: CONSTANT: CLK0_PHASE_SHIFT STRING "0"
 -- Retrieval info: CONSTANT: COMPENSATE_CLOCK STRING "CLK0"
--- Retrieval info: CONSTANT: INCLK0_INPUT_FREQUENCY NUMERIC "10000"
+-- Retrieval info: CONSTANT: INCLK0_INPUT_FREQUENCY NUMERIC "20000"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone IV E"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altpll"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "NORMAL"
@@ -346,6 +365,6 @@ END SYN;
 -- Retrieval info: GEN_FILE: TYPE_NORMAL PLL_altpll.inc FALSE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL PLL_altpll.cmp TRUE
 -- Retrieval info: GEN_FILE: TYPE_NORMAL PLL_altpll.bsf FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL PLL_altpll_inst.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL PLL_altpll_inst.vhd FALSE
 -- Retrieval info: LIB_FILE: altera_mf
 -- Retrieval info: CBX_MODULE_PREFIX: ON
