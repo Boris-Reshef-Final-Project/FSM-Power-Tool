@@ -540,7 +540,7 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
             }
         }}
         else if (CfsmAmount == 1){
-        for (int k = 0; k <= int( stateProducts.size()/2); k++) // Iterate over all the state_products
+        for (int k = 0; k <= int( (stateProducts.size()/2)-1); k++) // Iterate over all the state_products
         {
             if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
             {
