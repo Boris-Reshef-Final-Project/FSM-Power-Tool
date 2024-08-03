@@ -32,8 +32,12 @@ package tb_package_$ is
 
   type FSMproduct is record
     x  : std_logic_vector(num_inputs  downto 0);
-    CS : state;
-    NS : state;
+    CS_0 : state_0;
+	  CS_1 : state_1;
+    NS_0 : state_0;
+	  NS_1 : state_1;
+	  C_fsm : integer;
+	  N_fsm : integer;
     y  : std_logic_vector(num_outputs downto 0);
   end record;
 
