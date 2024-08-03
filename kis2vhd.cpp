@@ -512,6 +512,7 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
     {
         destin << "\t\t\t\t" << "when " << cfsm[j][i] << " =>\n\n";
         destin << "\t\t\t\t\t" << "case? x is" << endl;
+        if (CfsmAmount != 1){
         for (int k = 0; k < stateProducts.size(); k++) // Iterate over all the state_products
         {
             if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
@@ -537,7 +538,37 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
 
                 }
             }
+        }}
+        else if (CfsmAmount == 1){
+        for (int k = 0; k <= int( stateProducts.size()/2); k++) // Iterate over all the state_products
+        {
+            if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
+            {
+                destin << "\t\t\t\t\t\t" << "when \"" << stateProducts[k].x << "\" =>" << endl;
+
+                if (isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state ***is*** in the current cfsm
+                destin << "\t\t\t\t\t\t\t" << "s" << j << " <= " << stateProducts[k].ns << ";" << endl;
+
+                string modified_y = stateProducts[k].y;
+                replace(modified_y.begin(), modified_y.end(), '-', OutputBitReplace);
+
+                destin << "\t\t\t\t\t\t\t" << "y" << j+1 << " := \"" << modified_y << "\";" << endl;
+                if (!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
+                {
+                    int nextStateNumber = std::stoi(stateProducts[k].ns.substr(2));
+
+                    destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st"<<j<<"_wait;" << endl;
+                    
+                   
+
+                    destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") := '1';" << endl; // z(ns) = 1
+
+                }
+            }
         }
+
+        }
+
         destin << "\t\t\t\t\t\t" << "when others => NULL;" << endl;
         destin << "\t\t\t\t\t" << "end case?;\n\n";
 
@@ -1092,7 +1123,9 @@ void Optimiser_Min_trans_prob(
     vector<vector<string>>& cfsm) {
 
     const vector<Result>* vectors[] = {&min_pt1_vector, &min_pt2_vector, &min_sum_pt_vector};
+
     double min_score = numeric_limits<double>::max();
+
     const Result* best_result = nullptr;
 
     for (const auto& vec : vectors) {
