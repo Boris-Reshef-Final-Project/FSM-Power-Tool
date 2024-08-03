@@ -51,7 +51,7 @@ begin
 
 
   -- Test process
-  stimulus : process
+  stimulus : process is
     alias CS is       << signal DUT.s0 : state >>;    
     alias new_clk is  << signal DUT.clk_out : std_logic_vector(num_clocks downto 0) >>;
   begin
@@ -79,7 +79,7 @@ begin
     end loop; 
 
     wait;
-  end process;
+  end process stimulus;
 
 end architecture arc_tb_universal;
 
