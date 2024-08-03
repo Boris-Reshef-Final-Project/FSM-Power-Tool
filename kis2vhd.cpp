@@ -735,9 +735,15 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
         Copy the content of the template files to the new files
         Replace the symbols in the new files with the appropriate values */
 
+
+    // Change operation based on the number of cfsm (optimised or not)
+    string dir_select  = (num_clocks == 1) ? NewLocation2 : NewLocation;
+    string file_select = (num_clocks == 1) ? "_not_optimised" : "";
+
+
     // copy-paste the PLL file:
     ifstream PLLFile(templateFolder + "\\PLL_altpll.vhd");
-    ofstream PLLCopy(NewLocation + "\\PLL_altpll.vhd");
+    ofstream PLLCopy(dir_select + "\\PLL_altpll.vhd");
 
     // Check if the PLL_altpll.vhd file was opened successfully
     if (!PLLFile || !PLLCopy)
@@ -748,10 +754,6 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
 
     // Copy the content of the file
     PLLCopy << PLLFile.rdbuf();
-
-    // Change operation based on the number of cfsm (optimised or not)
-    string dir_select  = (num_clocks == 1) ? NewLocation2 : NewLocation;
-    string file_select = (num_clocks == 1) ? "_not_optimised" : "";
     
     
     // Open the template files for read
