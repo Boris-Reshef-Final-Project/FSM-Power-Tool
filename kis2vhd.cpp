@@ -68,7 +68,7 @@ string destinationFolder = "optimised";     // Name of destination folder
 string destinationFolder2 = "not-optimised";
 stringstream type_state;                    // String stream to store the type state line
 vector<string> State_list;                  // Vector to store the state names
-vector<string> testarray;                   // Vector to test array for the TB
+vector<string> testarray,testarray2;                   // Vector to test array for the TB
 string Original_Reset_state_code;           // The name (code) of the original reset state in the Kiss file
 int input, output, products, states;        // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
 
@@ -90,7 +90,7 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs);
 void create_tb(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol);
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, int num_clocks);
 void Return2Beginning(ifstream &file);
 vector<double> calc_product_prob(const vector<state_product>& stateProducts);
 void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
@@ -286,6 +286,35 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         // Print the duration in seconds
         cout << "Time taken: " << duration.count() << " seconds" << endl;
     }
+
+    for (const auto& sp : stateProducts) {
+        int CurrentStateFsm = find_cfsm(sp.cs);
+        int NextStateFsm = find_cfsm(sp.ns);
+
+        string CS_0, CS_1, NS_0, NS_1;
+        if (CurrentStateFsm == 0) {
+            CS_0 = sp.cs;
+            CS_1 = "st1_wait";
+        } else {
+            CS_0 = "st0_wait";
+            CS_1 = sp.cs;
+        }
+
+        if (NextStateFsm == 0) {
+            NS_0 = sp.ns;
+            NS_1 = "st1_wait";
+        } else {
+            NS_0 = "st0_wait";
+            NS_1 = sp.ns;
+        }
+
+        static int k2 = 0;
+        testarray2.push_back("\t" + to_string(k2++) + "\t=> (x => \"" + sp.x + "\",\tCS_0 => " + CS_0 +
+                             ",\tCS_1 => " + CS_1 + ",\tNS_0 => " + NS_0 + ",\tNS_1 => " + NS_1 + 
+                             ",\tC_fsm => " + to_string(CurrentStateFsm) + ",\tN_fsm => " + to_string(NextStateFsm) +
+                             ",\ty => \"" + sp.y + "\")");
+    }
+
     }
     else if (CfsmAmount == 1){
 
@@ -620,13 +649,13 @@ void Fill_state_product(ifstream &source, ofstream &destin)
             string temp;
             iss >> temp >> Original_Reset_state_code;    // Read ".r" and its associated value
             stateMap[Original_Reset_state_code] = "st0"; // Map the reset state to "st0"
-            break; // We assume there's only one ".r" line
+            break;                                       // We assume there's only one ".r" line
         }
     }
 
     // Rewind to the beginning of the file for the second pass
     Return2Beginning(source);
-    
+
     // Second pass to process the actual state lines
     while (getline(source, line))
     {
@@ -643,43 +672,46 @@ void Fill_state_product(ifstream &source, ofstream &destin)
         }
 
         // Map and replace cs if it does not match the Format list
-        if (stateMap.find(sp.cs) == stateMap.end()) {
-            if (!isStringInVector(sp.cs, State_list)){
-            string stateName = "st" + to_string(stateMap.size());
-            stateMap[sp.cs] = stateName;
-            State_list.push_back(stateName);
-            sp.cs = stateMap[sp.cs];
-            }
-            else 
-                stateMap[sp.cs]=sp.cs;
-        }
-        else 
-            sp.cs =  stateMap[sp.cs];
-        
-        // Map and replace ns if it does not match the Format list
-         if (stateMap.find(sp.ns) == stateMap.end())
+        if (stateMap.find(sp.cs) == stateMap.end())
         {
-            if (!isStringInVector(sp.ns, State_list)){
-            string stateName = "st" + to_string(stateMap.size());
-            stateMap[sp.ns] = stateName;
-            sp.ns = stateMap[sp.ns];
-
+            if (!isStringInVector(sp.cs, State_list))
+            {
+                string stateName = "st" + to_string(stateMap.size());
+                stateMap[sp.cs] = stateName;
+                State_list.push_back(stateName);
+                sp.cs = stateMap[sp.cs];
             }
-            else 
-                stateMap[sp.ns]=sp.ns;
+            else
+                stateMap[sp.cs] = sp.cs;
         }
-        else 
-            sp.ns =  stateMap[sp.ns];
+        else
+            sp.cs = stateMap[sp.cs];
+
+        // Map and replace ns if it does not match the Format list
+        if (stateMap.find(sp.ns) == stateMap.end())
+        {
+            if (!isStringInVector(sp.ns, State_list))
+            {
+                string stateName = "st" + to_string(stateMap.size());
+                stateMap[sp.ns] = stateName;
+                sp.ns = stateMap[sp.ns];
+            }
+            else
+                stateMap[sp.ns] = sp.ns;
+        }
+        else
+            sp.ns = stateMap[sp.ns];
         // Add the state_product instance to the vector
         stateProducts.push_back(sp);
-        
+
         // Add contents to testarray
         static int k = 0;
         testarray.push_back(("\t" + to_string(k++) + "\t=> (x => \"" + sp.x + "\",\tCS => " + sp.cs +
-                            ",\tNS => " + sp.ns + ",\ty => \"" + sp.y + "\")"));
+                             ",\tNS => " + sp.ns + ",\ty => \"" + sp.y + "\")"));
+
         
         // Print the contents of the state_product instance
-        cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
+        //cout << "x: " << sp.x << ", cs: " << sp.cs << ", ns: " << sp.ns << ",\ty: " << sp.y << endl;
     }
 }
 
@@ -799,9 +831,20 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     
     ReplaceSymbolsInNewFile(TbTemplate, TbVhd, {"$"}, {SourceName});
     
+    if (num_clocks == 1){
     ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
                             {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, type_state.str(), to_string(testarray.size()-1), "\0"},
-                            "?q");
+                            "?q", num_clocks);
+    }
+
+    else {
+
+        ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, type_state.str(), to_string(testarray2.size()-1), "\0"},
+                            "?q", num_clocks);
+
+    }
+
     
     ReplaceSymbolsInNewFile(TopTemplate, top_vhd, {"$", "?x", "?y", "?c"}, {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1)});
 
@@ -844,10 +887,12 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 /* Overload number 2*/
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol)
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, int num_clocks)
 { 
     string line;
     size_t pos;
+    vector<string> triggerArray;
+    triggerArray = (num_clocks == 1) ? testarray : testarray2;
     while (getline(srcfile, line))
     {
         for (size_t i = 0; i < symbols.size(); i++)
@@ -857,10 +902,10 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
             {
                 if (symbols[i] == triggerSymbol)
                     {
-                        for(int j = 0; j < testarray.size(); j++)
+                        for(int j = 0; j < triggerArray.size(); j++)
                         {
-                            dstfile << testarray[j];
-                            if(j < testarray.size()-1)
+                            dstfile << triggerArray[j];
+                            if(j < triggerArray.size()-1)
                                 dstfile << "," << endl;
                         }
                         line = "";
