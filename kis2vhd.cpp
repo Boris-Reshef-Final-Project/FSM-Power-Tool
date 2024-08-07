@@ -70,6 +70,7 @@ stringstream type_state;                    // String stream to store the type s
 vector<string> State_list;                  // Vector to store the state names
 vector<string> testarray,testarray2;                   // Vector to test array for the TB
 string Original_Reset_state_code;           // The name (code) of the original reset state in the Kiss file
+string state_decleration;                   // String to store the state decleration line
 int input, output, products, states;        // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -485,6 +486,7 @@ void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<strin
             type_state << ", ";
     }
     type_state << ", st1_wait);" << endl;
+    state_decleration = type_state.str();
 
     // Adding signals
     type_state << "signal s0 : state_0;" << endl;
@@ -840,7 +842,7 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     else {
 
         ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, type_state.str(), to_string(testarray2.size()-1), "\0"},
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, state_decleration, to_string(testarray2.size()-1), "\0"},
                             "?q", num_clocks);
 
     }

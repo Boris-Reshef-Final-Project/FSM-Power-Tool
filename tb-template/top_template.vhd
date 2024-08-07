@@ -7,10 +7,8 @@ library altera;
 use altera.altera_primitives_components.all;
 library altera_mf;
 use altera_mf.altera_mf_components.all;
-library cycloneive_atoms;
-use cycloneive_atoms.all;
-library cycloneive_components;
-use cycloneive_components.all;
+library cycloneive;
+use cycloneive.all;
 
 entity top_$ is
     generic (
@@ -88,7 +86,7 @@ architecture arc_top of top_$ is
         -- Used in: simulation, power_analyzer, full_fpga
         G_PLL: if not baseline_power generate
             G_PLL_LOOP: for i in 0 to ?c generate
-                PLL: PLL_altpll PORT MAP (
+                PLL: entity work.PLL_altpll PORT MAP (
                     inclk0  => clk(i),
                     clken   => clken(i),
                     clk_out => clk_out(i)
