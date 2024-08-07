@@ -336,7 +336,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
     destin << "begin" << endl << endl;
     if (CfsmAmount == 1)
-    destin << "\tclken(0) <= '1';" << endl;
+        destin << "\tclken(0) <= '1';" << endl;
 
     for (j = 0; j < CfsmAmount; j++)
     {
@@ -354,6 +354,9 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
             destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
             break;
         }
+
+        if ((cfsm[j] != find_cfsm("st0")) && (CfsmAmount != 1))
+            destin << "\t\t\t" << "z(0)" << " <= '1';" << endl;
 
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
         if (CfsmAmount != 1){
@@ -835,14 +838,14 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     
     if (num_clocks == 1){
     ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, type_state.str(), to_string(testarray.size()-1), "\0"},
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, type_state.str(), to_string(testarray.size()-1), "\0"},
                             "?q", num_clocks);
     }
 
     else {
 
         ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks), clockPeriod, state_decleration, to_string(testarray2.size()-1), "\0"},
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, state_decleration, to_string(testarray2.size()-1), "\0"},
                             "?q", num_clocks);
 
     }

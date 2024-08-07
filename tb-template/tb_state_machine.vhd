@@ -34,9 +34,10 @@ end entity tb_$;
 
 architecture arc_tb_universal of tb_$ is
   signal rst : std_logic := '1';
-  signal clk : std_logic_vector(num_clocks  downto 0) := (others => '0');
+  signal clk : std_logic_vector(num_clocks  downto 0) := (0 => '1', others => '0');
   signal x   : std_logic_vector(num_inputs  downto 0) := (others => '0');
   signal y   : std_logic_vector(num_outputs downto 0);
+  signal test_clk : std_logic;
   
 begin
 
@@ -45,36 +46,51 @@ begin
     generic map (simulation => true, power_analyzer => false, baseline_power => false, full_fpga => false, duplicates => 1)
     port    map (rst => rst, clk => clk, x => x, y => y);
 
+
   -- Generate clock(s) with enable
   -- This is going to be replaced with the PLL in the physical tests.
-  clk <= not clk after (clk_period/2);
+  gen_clk : process is
+    alias clken is << signal DUT.clken : std_logic_vector(clk'range) >>;
+  begin
+    clk <= (clken xor clk) after (clk_period/2);
+    wait;
+  end process gen_clk;
+
+
+  test_clk <= or clk;
 
 
   -- Test process
   stimulus : process
-    alias CS is       << signal DUT.s0 : state >>;    
-    alias new_clk is  << signal DUT.clk_out : std_logic_vector(num_clocks downto 0) >>;
+    alias CS_0 is       << signal DUT.G_FSM.FSM.s0 : state_0 >>;
+    alias CS_1 is       << signal DUT.G_FSM.FSM.s1 : state_1 >>;
+    
   begin
     
     x <= (others => '0');
     wait for 1 ns;
-    wait until rising_edge(new_clk); -- wait for PLL to lock
+    wait until rising_edge(test_clk);
     rst <= '0' after 2 * clk_period; -- Release reset after 2cc
     
 
     for i in test_array'range loop
       -- Apply input stimulus
-      CS <= force test_array(i).CS;
-      wait until rising_edge(new_clk);
-      CS <= release;
+      CS_0 <= force test_array(i).CS_0;
+      CS_1 <= force test_array(i).CS_1;
+      wait until rising_edge(test_clk);
+      CS_0 <= release;
+      CS_1 <= release;
       x <= test_array(i).x;
       -- Wait for the next clock edge
-      wait until rising_edge(new_clk);
+      wait until rising_edge(test_clk);
+      if (test_array(i).C_fsm /= test_array(i).N_fsm) then -- wait 1 additional clock cycle if the CFSM is going to change
+        wait until rising_edge(test_clk);
+      end if;
       -- Check the output and Assert the result of y and NS (CS should now be the next state)
-      assert (y = test_array(i).y) and (CS = test_array(i).NS) 
+      assert (y = test_array(i).y)
         report "Bad product at line " & integer'image(i) & "\n" &
-               "Expected: y = " & to_string(test_array(i).y) & " and NS = " & to_string(test_array(i).NS) & "\n" &
-               "Got:      y = " & to_string(y)               & " and NS = " & to_string(CS) & "\n"
+               "Expected: y = " & to_string(test_array(i).y) & " ; NS_0 = " & to_string(test_array(i).NS_0) & " ; NS_1 = " & to_string(test_array(i).NS_1) & "\n" &
+               "Got:      y = " & to_string(y)               & " and NS = " & to_string(CS_0)               & " and NS = " & to_string(CS_1) & "\n"
               severity warning;
     end loop; 
 

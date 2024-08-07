@@ -52,24 +52,23 @@ begin
 
   -- Test process
   stimulus : process is
-    alias CS is       << signal DUT.s0 : state >>;    
-    alias new_clk is  << signal DUT.clk_out : std_logic_vector(num_clocks downto 0) >>;
+    alias CS is       << signal DUT.G_FSM.FSM.s0 : state >>;;
   begin
     
     x <= (others => '0');
     wait for 1 ns;
-    wait until rising_edge(new_clk); -- wait for PLL to lock
+    wait until rising_edge(clk(0)); -- wait for PLL to lock
     rst <= '0' after 2 * clk_period; -- Release reset after 2cc
     
 
     for i in test_array'range loop
       -- Apply input stimulus
       CS <= force test_array(i).CS;
-      wait until rising_edge(new_clk);
+      wait until rising_edge(clk(0));
       CS <= release;
       x <= test_array(i).x;
       -- Wait for the next clock edge
-      wait until rising_edge(new_clk);
+      wait until rising_edge(clk(0));
       -- Check the output and Assert the result of y and NS (CS should now be the next state)
       assert (y = test_array(i).y) and (CS = test_array(i).NS) 
         report "Bad product at line " & integer'image(i) & "\n" &
