@@ -39,7 +39,7 @@ package tb_package_$ is
 
   type FSMproduct_array is array(natural range <>) of FSMproduct;
   
-  constant test_array : FSMproduct_array(?p downto 0) := (
+  constant test_array : FSMproduct_array(0 to ?p) := (
     ?q
   );
   

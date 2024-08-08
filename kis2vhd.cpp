@@ -68,7 +68,7 @@ string destinationFolder = "optimised";     // Name of destination folder
 string destinationFolder2 = "not-optimised";
 stringstream type_state;                    // String stream to store the type state line
 vector<string> State_list;                  // Vector to store the state names
-vector<string> testarray,testarray2;                   // Vector to test array for the TB
+vector<string> testarray,testarray2;        // Vector to test array for the TB
 string Original_Reset_state_code;           // The name (code) of the original reset state in the Kiss file
 string state_decleration;                   // String to store the state decleration line
 int input, output, products, states;        // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
@@ -92,6 +92,7 @@ void calculate_transition_probabilities_V1(const vector<state_product> &statePro
 void create_tb(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, int num_clocks);
+string replace_x_dontcare(string s);
 void Return2Beginning(ifstream &file);
 vector<double> calc_product_prob(const vector<state_product>& stateProducts);
 void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
@@ -355,8 +356,8 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
             break;
         }
 
-        if ((cfsm[j] != find_cfsm("st0")) && (CfsmAmount != 1))
-            destin << "\t\t\t" << "z(0)" << " <= '1';" << endl;
+        if ((j != find_cfsm("st0")) && (CfsmAmount != 1))
+            destin << "\t\t\t" << "z(0)" << " := '1';" << endl;
 
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
         if (CfsmAmount != 1){
@@ -394,13 +395,13 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                 }
             }
         }}
-
+        destin << "\t" << "sig_y" << j << " <= y" << j << ";" << endl;
         destin << "\t" << "end process cfsm" << j << ";\n\n";
     }
     if (CfsmAmount != 1)
-    destin << "\ty <= y1 or y2;" << endl << endl;
+        destin << "\ty <= sig_y0 or sig_y1;" << endl << endl;
     else
-    destin << "\ty <= y1;" << endl << endl;
+        destin << "\ty <= sig_y1;" << endl << endl;
     
     destin << "end arc_state_machine;" << endl;
     return 0;
@@ -496,8 +497,9 @@ void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<strin
     type_state << "signal s1 : state_1;" << endl;
 
     // Adding shared variables
-    for (int i = 1; i <= CfsmAmount; ++i) {
-        type_state << "shared variable y" << i << ": std_logic_vector(y'range);" << endl;
+    for (int i = 0; i < CfsmAmount; ++i) {
+        type_state << "shared variable y" << i << ": std_logic_vector(y'range) := (others => '0');" << endl;
+        type_state << "signal sig_y" << i << ": std_logic_vector(y'range);" << endl;
     }
     type_state << "shared variable z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n" << endl;
 
@@ -531,7 +533,7 @@ void MakeTypeState2(ifstream &source, ofstream &dest) // Write the values of the
 
             // Write signal declaration
             dest << "\tsignal s0 : state;" << endl;
-            dest << "\tshared variable y1: std_logic_vector(y'range);" << endl;
+            dest << "\tshared variable y1: std_logic_vector(y'range) := (others => '0');" << endl;
 
 
         }
@@ -629,9 +631,6 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
     destin << "\t\t\t\t" << "when others => NULL;\n" << endl;
     destin << "\t\t\t" << "end case;" << endl;
 }
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -757,10 +756,6 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-
 void create_tb(int num_clocks) // Copy and use the template files to create the testbench
 {
     /*  symbols: $ = source name,  @ = vcd run time, ?<char> = replace parameter with number from cpp file
@@ -824,12 +819,15 @@ void create_tb(int num_clocks) // Copy and use the template files to create the 
     }
 
     // Recieve user input for the vcdrun.do simulation run time and clock period
-    cout << "Enter the vcd run time (with time units): ";
-    string vcdRunTime;
-    getline(cin, vcdRunTime);
-    cout << "Enter the clock period (with time units): ";
-    string clockPeriod;
-    getline(cin, clockPeriod);
+    static string vcdRunTime = "\0";
+    static string clockPeriod = "\0";
+    if (vcdRunTime.empty() || clockPeriod.empty())
+    {
+        cout << "Enter the vcd run time (with time units): ";
+        getline(cin, vcdRunTime);
+        cout << "Enter the clock period (with time units): ";
+        getline(cin, clockPeriod);
+    }
 
     // Replace the symbols in the new files with the appropriate values
     ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$", "@"}, {SourceName, vcdRunTime});
@@ -909,7 +907,7 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
                     {
                         for(int j = 0; j < triggerArray.size(); j++)
                         {
-                            dstfile << triggerArray[j];
+                            dstfile << replace_x_dontcare(triggerArray[j]);
                             if(j < triggerArray.size()-1)
                                 dstfile << "," << endl;
                         }
@@ -922,6 +920,16 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
         dstfile << line << endl;
     }
 }
+/*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+string replace_x_dontcare(string s)
+// Replace the '-' characters in the s string with with '1' or '0' for the test array in the TB
+// to make sure the test array is in the correct format
+{
+    replace(s.begin(), s.end(), '-', OutputBitReplace);
+    return s;
+}
+
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void Return2Beginning(ifstream &file) // Return to the beginning of the file

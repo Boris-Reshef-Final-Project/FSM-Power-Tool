@@ -71,9 +71,9 @@ begin
       wait until rising_edge(clk(0));
       -- Check the output and Assert the result of y and NS (CS should now be the next state)
       assert (y = test_array(i).y) and (CS = test_array(i).NS) 
-        report "Bad product at line " & integer'image(i) & "\n" &
-               "Expected: y = " & to_string(test_array(i).y) & " and NS = " & to_string(test_array(i).NS) & "\n" &
-               "Got:      y = " & to_string(y)               & " and NS = " & to_string(CS) & "\n"
+        report "Bad product at line " & integer'image(i) & LF &
+               "Expected: y = " & to_string(test_array(i).y) & " ; NS = " & to_string(test_array(i).NS) & LF &
+               "Got:      y = " & to_string(y)               & " ; NS = " & to_string(CS) & LF
               severity warning;
     end loop; 
 

@@ -33,11 +33,13 @@ entity tb_$ is
 end entity tb_$;
 
 architecture arc_tb_universal of tb_$ is
-  signal rst : std_logic := '1';
-  signal clk : std_logic_vector(num_clocks  downto 0) := (0 => '1', others => '0');
-  signal x   : std_logic_vector(num_inputs  downto 0) := (others => '0');
-  signal y   : std_logic_vector(num_outputs downto 0);
+  signal rst      : std_logic := '1';
+  signal clk      : std_logic_vector(num_clocks  downto 0) := (others => '0');
+  signal new_clk  : std_logic_vector(num_clocks  downto 0) := (others => '0');
+  signal x        : std_logic_vector(num_inputs  downto 0) := (others => '0');
+  signal y        : std_logic_vector(num_outputs downto 0);
   signal test_clk : std_logic;
+  signal new_clk  : std_logic := '0';
   
 begin
 
@@ -47,13 +49,14 @@ begin
     port    map (rst => rst, clk => clk, x => x, y => y);
 
 
+  new_clk <= not new_clk after (clk_period/2);
+
   -- Generate clock(s) with enable
   -- This is going to be replaced with the PLL in the physical tests.
-  gen_clk : process is
+  gen_clk : process (all) is
     alias clken is << signal DUT.clken : std_logic_vector(clk'range) >>;
   begin
-    clk <= (clken xor clk) after (clk_period/2);
-    wait;
+    clk <= clken and new_clk;
   end process gen_clk;
 
 
@@ -88,9 +91,9 @@ begin
       end if;
       -- Check the output and Assert the result of y and NS (CS should now be the next state)
       assert (y = test_array(i).y)
-        report "Bad product at line " & integer'image(i) & "\n" &
-               "Expected: y = " & to_string(test_array(i).y) & " ; NS_0 = " & to_string(test_array(i).NS_0) & " ; NS_1 = " & to_string(test_array(i).NS_1) & "\n" &
-               "Got:      y = " & to_string(y)               & " and NS = " & to_string(CS_0)               & " and NS = " & to_string(CS_1) & "\n"
+        report "Bad product at line " & integer'image(i) & LF &
+               "Expected: y = " & to_string(test_array(i).y) & " ; NS_0 = " & to_string(test_array(i).NS_0) & " ; NS_1 = " & to_string(test_array(i).NS_1) & LF &
+               "Got:      y = " & to_string(y)               & " ; NS_0 = " & to_string(CS_0)               & " ; NS_1 = " & to_string(CS_1) & LF
               severity warning;
     end loop; 
 
