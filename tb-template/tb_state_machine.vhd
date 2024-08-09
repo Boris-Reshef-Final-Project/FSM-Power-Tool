@@ -33,13 +33,12 @@ entity tb_$ is
 end entity tb_$;
 
 architecture arc_tb_universal of tb_$ is
+  
   signal rst      : std_logic := '1';
   signal clk      : std_logic_vector(num_clocks  downto 0) := (others => '0');
-  signal new_clk  : std_logic_vector(num_clocks  downto 0) := (others => '0');
   signal x        : std_logic_vector(num_inputs  downto 0) := (others => '0');
   signal y        : std_logic_vector(num_outputs downto 0);
-  signal test_clk : std_logic;
-  signal new_clk  : std_logic := '0';
+  signal test_clk : std_logic := '0';
   
 begin
 
@@ -49,56 +48,52 @@ begin
     port    map (rst => rst, clk => clk, x => x, y => y);
 
 
-  new_clk <= not new_clk after (clk_period/2);
-
-  -- Generate clock(s) with enable
-  -- This is going to be replaced with the PLL in the physical tests.
-  gen_clk : process (all) is
-    alias clken is << signal DUT.clken : std_logic_vector(clk'range) >>;
-  begin
-    clk <= clken and new_clk;
-  end process gen_clk;
-
-
-  test_clk <= or clk;
+  -- Generate clock(s) signal(s)
+  clk <= not clk after clk_period/2;
+  test_clk <= or clk; -- easy way to get a single clock signal for the stimulus
 
 
   -- Test process
   stimulus : process
-    alias CS_0 is       << signal DUT.G_FSM.FSM.s0 : state_0 >>;
-    alias CS_1 is       << signal DUT.G_FSM.FSM.s1 : state_1 >>;
+    alias CS_0 is       << signal DUT.G1.FSM.s0 : state_0 >>;
+    alias CS_1 is       << signal DUT.G1.FSM.s1 : state_1 >>;
     
   begin
     
-    x <= (others => '0');
-    wait for 1 ns;
-    wait until rising_edge(test_clk);
-    rst <= '0' after 2 * clk_period; -- Release reset after 2cc
-    
+    x <= test_array(0).x;
+    rst <= '0'; -- Release reset
+    wait until rising_edge(test_clk);    
 
     for i in test_array'range loop
       -- Apply input stimulus
+      x <= test_array(i).x;
       CS_0 <= force test_array(i).CS_0;
       CS_1 <= force test_array(i).CS_1;
-      wait until rising_edge(test_clk);
       CS_0 <= release;
       CS_1 <= release;
-      x <= test_array(i).x;
-      -- Wait for the next clock edge
+
       wait until rising_edge(test_clk);
       if (test_array(i).C_fsm /= test_array(i).N_fsm) then -- wait 1 additional clock cycle if the CFSM is going to change
         wait until rising_edge(test_clk);
       end if;
+      wait on y for clk_period/10; -- wait for the output to stabilize
+
       -- Check the output and Assert the result of y and NS (CS should now be the next state)
       assert (y = test_array(i).y)
         report "Bad product at line " & integer'image(i) & LF &
-               "Expected: y = " & to_string(test_array(i).y) & " ; NS_0 = " & to_string(test_array(i).NS_0) & " ; NS_1 = " & to_string(test_array(i).NS_1) & LF &
-               "Got:      y = " & to_string(y)               & " ; NS_0 = " & to_string(CS_0)               & " ; NS_1 = " & to_string(CS_1) & LF
+               "Expected: y = " & to_string(test_array(i).y) & HT & " ; NS_0 = " & to_string(test_array(i).NS_0) & HT & " ; " & HT & "NS_1 = " & to_string(test_array(i).NS_1) & LF &
+               "Got:      y = " & to_string(y)               & HT & " ; NS_0 = " & to_string(CS_0)               & HT & " ; " & HT & "NS_1 = " & to_string(CS_1)
               severity warning;
+      
+              assert (y /= test_array(i).y)
+        report "Line " & integer'image(i) & " success" severity note;
+      wait until falling_edge(test_clk);
+    
     end loop; 
-
+      
+      report "Testbench finished" severity note;
     wait;
-  end process;
+  end process stimulus;
 
 end architecture arc_tb_universal;
 

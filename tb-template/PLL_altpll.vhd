@@ -43,9 +43,8 @@ USE altera_mf.all;
 ENTITY PLL_altpll IS
 	PORT
 	(
-		inclk0	: IN  STD_LOGIC  	:= '0';
-		clken	: IN  STD_LOGIC 	:= '0';
-		clk_out	: OUT STD_LOGIC
+		inclk0		: IN STD_LOGIC  := '0';
+		c0		: OUT STD_LOGIC 
 	);
 END PLL_altpll;
 
@@ -59,10 +58,6 @@ ARCHITECTURE SYN OF pll_altpll IS
 	SIGNAL sub_wire3	: STD_LOGIC_VECTOR (4 DOWNTO 0);
 	SIGNAL sub_wire4	: STD_LOGIC ;
 
-	-- User added signals
-	SIGNAL s	: STD_LOGIC;
-	SIGNAL c0	: STD_LOGIC;
-	------------------------
 
 
 	COMPONENT altpll
@@ -129,20 +124,6 @@ ARCHITECTURE SYN OF pll_altpll IS
 	END COMPONENT;
 
 BEGIN
-
-
-	-- User added enable logic
-
-	Process(c0, clken) is
-	begin
-		if (c0 = '0') then
-			s <= clken;
-		end if;
-	end process;
-	clk_out <= c0 and s;
-	-----------------------------
-
-
 	sub_wire2_bv(0 DOWNTO 0) <= "0";
 	sub_wire2    <= To_stdlogicvector(sub_wire2_bv);
 	sub_wire0    <= inclk0;
