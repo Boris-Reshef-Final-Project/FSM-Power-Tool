@@ -746,11 +746,12 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     
     
     // Open the template files for read
-    ifstream VcdDoTemplate   (templateFolder + "\\vcdrun.do");
-    ifstream TbTemplate      (templateFolder + "\\tb_state_machine" + file_select + ".vhd");
-    ifstream PackTemplate    (templateFolder + "\\tb_package_state_machine" + file_select + ".vhd");
-    ifstream TopTemplate     (templateFolder + "\\top_template.vhd");
-    ifstream TopPackTemplate (templateFolder + "\\top_pack_template.vhd");
+    ifstream VcdDoTemplate      (templateFolder + "\\vcdrun.do");
+    ifstream CompileDoTemplate  (templateFolder + "\\compile.do");
+    ifstream TbTemplate         (templateFolder + "\\tb_state_machine" + file_select + ".vhd");
+    ifstream PackTemplate       (templateFolder + "\\tb_package_state_machine" + file_select + ".vhd");
+    ifstream TopTemplate        (templateFolder + "\\top_template.vhd");
+    ifstream TopPackTemplate    (templateFolder + "\\top_pack_template.vhd");
 
     // Check if the template files were opened successfully
     if (!VcdDoTemplate || !TbTemplate || !PackTemplate || !TopTemplate || !TopPackTemplate)
@@ -762,14 +763,15 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     // Create new files in the destination folder
     ofstream TbVhd       (dir_select + "\\tb_" +         SourceName + ".vhd");
     ofstream TbPackageVhd(dir_select + "\\tb_package_" + SourceName + ".vhd");
-    ofstream VcdDoTb     (dir_select + "\\vcdrun_" +     SourceName + ".do");
+    ofstream VcdDoTb     (dir_select + "\\vcdrun_" +     SourceName +  ".do");
+    ofstream DoComp      (dir_select + "\\compile" +                   ".do");
     ofstream top_vhd     (dir_select + "\\top_" +        SourceName + ".vhd");
     ofstream top_pack    (dir_select + "\\top_pack_" +   SourceName + ".vhd");
 
     
 
     // Check if the new files were created successfully
-    if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack)
+    if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack || !DoComp)
     {
         cerr << "Error: Failed to create new test-bench files. Reason: " << strerror(errno) << endl;
         return;
@@ -788,6 +790,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
 
     // Replace the symbols in the new files with the appropriate values
     ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$", "@"}, {SourceName, vcdRunTime});
+    ReplaceSymbolsInNewFile(CompileDoTemplate, DoComp, {"$"}, {SourceName});
     
     ReplaceSymbolsInNewFile(TbTemplate, TbVhd, {"$"}, {SourceName});
     

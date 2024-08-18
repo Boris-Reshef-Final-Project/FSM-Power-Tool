@@ -7,3 +7,4 @@ optimised/*
 not-optimised/*
 dest.vhd
 state_machine.vhd
+*.code-workspace
