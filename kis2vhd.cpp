@@ -528,7 +528,7 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
 
                     string modified_y = stateProducts[k].y;
                     replace(modified_y.begin(), modified_y.end(), '-', OutputBitReplace);
-                    destin << "\t\t\t\t\t\t\t" << "y" << j+1 << " := \"" << modified_y << "\";" << endl;
+                    destin << "\t\t\t\t\t\t\t" << "y" << j << " := \"" << modified_y << "\";" << endl;
                     
                     if (!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                     {
@@ -1081,6 +1081,7 @@ void find_best_probabilities(int states, const unordered_map<string, unordered_m
     find_best_probabilities_recursive(state_list, current_comb, remaining_elements, 0, transitionProbMap, min_pt1_vector, min_pt2_vector, min_sum_pt_vector);
 
     // Print the best results
+    /*
     cout << "Best results for min_pt1:" << endl;
     for (const auto& res : min_pt1_vector) {
         cout << "{cfsm0={";
@@ -1106,7 +1107,7 @@ void find_best_probabilities(int states, const unordered_map<string, unordered_m
         cout << "}, cfsm1={";
         for (const auto& s : res.cfsm1) cout << s << ",";
         cout << "}, pt1=" << res.pt1 << ", pt2=" << res.pt2 << ", sum_pt=" << res.sum_pt << "}" << endl;
-    }
+    }*/
 
     Optimiser_Min_trans_prob(min_pt1_vector, min_pt2_vector, min_sum_pt_vector, cfsm);
 }
