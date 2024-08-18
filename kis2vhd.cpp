@@ -790,7 +790,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
 
     // Replace the symbols in the new files with the appropriate values
     ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$", "@"}, {SourceName, vcdRunTime});
-    ReplaceSymbolsInNewFile(CompileDoTemplate, DoComp, {"$"}, {SourceName});
+    ReplaceSymbolsInNewFile(CompileDoTemplate, DoComp, {"%"}, {SourceName});
     
     ReplaceSymbolsInNewFile(TbTemplate, TbVhd, {"$"}, {SourceName});
     
