@@ -54,7 +54,7 @@ architecture arc_top of top_$ is
                     end if;
                 end process;
                 fsm_clk(i) <= clk_src(i) and s(i);
-            end generate G0_LOOP;
+            end generate ena_unit;
         end generate G0;
 
 

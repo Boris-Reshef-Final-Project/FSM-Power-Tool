@@ -63,7 +63,7 @@ state_product sp; // Create a Global state_product instance
 string ProjectFolder;
 string SourceName;
 string NewLocation,NewLocation2;
-string templateFolder    = "tb-template";   // Name of template folder
+string templateFolder    = "Templates";   // Name of template folder
 string destinationFolder = "optimised";     // Name of destination folder
 string destinationFolder2 = "not-optimised";
 stringstream type_state;                    // String stream to store the type state line
@@ -89,7 +89,7 @@ bool isStringInVector(const string &str, const vector<string> &vec);
 int  find_cfsm(string state);
 void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs);
-void create_tb(int num_clocks);
+void Use_Templates(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, int num_clocks);
 string replace_x_dontcare(string s);
@@ -190,7 +190,7 @@ int main()
    
     KissFiles2Vhd(CfsmAmount, source, destin); // Preform the parsing process
 
-    create_tb(CfsmAmount); // Create the testbench files
+    Use_Templates(CfsmAmount); // Create the testbench files
 
     destin.close();
 
@@ -204,7 +204,7 @@ int main()
 
     KissFiles2Vhd(CfsmAmount, source, destin); // Preform the parsing process
 
-    create_tb(CfsmAmount); // Create the testbench files
+    Use_Templates(CfsmAmount); // Create the testbench files
 
     // Closing files.
     source.close();
@@ -713,7 +713,7 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void create_tb(int num_clocks) // Copy and use the template files to create the testbench
+void Use_Templates(int num_clocks) // Copy and use the template files to create the testbench
 {
     /*  symbols: $ = source name,  @ = vcd run time, ?<char> = replace parameter with number from cpp file
         template files: vcdrun.do, tb_state_machine.vhd, tb_package_state_machine.vhd, top_template.vhd
