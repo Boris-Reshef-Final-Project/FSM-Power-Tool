@@ -52,7 +52,7 @@ begin
 
   -- Test process
   stimulus : process is
-    alias CS is       << signal DUT.G_FSM.FSM.s0 : state >>;;
+    alias CS is       << signal DUT.G1.FSM.s0 : state >>;;
   begin
     
     x <= (others => '0');
