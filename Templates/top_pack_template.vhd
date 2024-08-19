@@ -1,14 +1,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package top_pack_$ is
+package pack_top_$ is
     type int_arr is array (natural range<>) of integer;
     constant c_polynom : int_arr := (?g);
     function LFSR (buff : std_logic_vector; polynom : int_arr) return std_logic_vector;
-end package top_pack_$;
+end package pack_top_$;
 
 
-package body top_pack_$ is
+package body pack_top_$ is
 
     function LFSR (buff : std_logic_vector; polynom : int_arr) return std_logic_vector is
         variable or_gate, xor_gate, s_in : std_logic :='0';
@@ -23,4 +23,4 @@ package body top_pack_$ is
              return (buff((buff'high-1) downto buff'low) & s_in);
         end function LFSR;
     
-end package body top_pack_$;
+end package body pack_top_$;

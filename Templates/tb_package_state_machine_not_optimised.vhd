@@ -20,7 +20,7 @@ File Description: This file is the testbench package, and should be used with th
 library ieee;
 use ieee.std_logic_1164.all;
 
-package tb_package_$ is
+package pack_tb_$ is
 
   -- constants and types
   constant num_inputs   : positive  := ?x; -- number of inputs -1
@@ -44,8 +44,8 @@ package tb_package_$ is
   );
   
 
-end package tb_package_$;
+end package pack_tb_$;
 
 
-package body tb_package_$ is
-end package body tb_package_$;
+package body pack_tb_$ is
+end package body pack_tb_$;

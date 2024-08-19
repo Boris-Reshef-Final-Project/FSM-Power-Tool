@@ -27,7 +27,7 @@ use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.tb_package_$.all; -- Use the package
+use work.pack_tb_$.all; -- Use the package
 
 entity tb_$ is
 end entity tb_$;

@@ -2,7 +2,7 @@ Library IEEE;
 use ieee.std_logic_1164.all;
 library work;
 use work.all;
-use work.top_pack_$.all;
+use work.pack_top_$.all;
 library altera; 
 use altera.altera_primitives_components.all;
 library altera_mf;

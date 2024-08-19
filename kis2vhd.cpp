@@ -68,10 +68,11 @@ string destinationFolder = "optimised";     // Name of destination folder
 string destinationFolder2 = "not-optimised";
 stringstream type_state;                    // String stream to store the type state line
 vector<string> State_list;                  // Vector to store the state names
-vector<string> testarray,testarray2;        // Vector to test array for the TB
+vector<vector<string>> newarr1, newarr2;    // Vector to test array for the TB
 string Original_Reset_state_code;           // The name (code) of the original reset state in the Kiss file
 string state_decleration;                   // String to store the state decleration line
 int input, output, products, states;        // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
+
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -91,7 +92,7 @@ void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs);
 void Use_Templates(int num_clocks);
 void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, int num_clocks);
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, vector<vector<string>> newarr, int num_clocks);
 string replace_x_dontcare(string s);
 void Return2Beginning(ifstream &file);
 vector<double> calc_product_prob(const vector<state_product>& stateProducts);
@@ -295,10 +296,9 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
             }
 
             static int k2 = 0;
-            testarray2.push_back("\t" + to_string(k2++) + "\t=> (x => \"" + sp.x + "\",\tCS_0 => " + CS_0 +
-                                ",\tCS_1 => " + CS_1 + ",\tNS_0 => " + NS_0 + ",\tNS_1 => " + NS_1 + 
-                                ",\tC_fsm => " + to_string(CurrentStateFsm) + ",\tN_fsm => " + to_string(NextStateFsm) +
-                                ",\ty => \"" + sp.y + "\")");
+            newarr2.push_back({"    ", to_string(k2), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS_0 => "+CS_0+",", "CS_1 => "+CS_1+",",
+             "NS_0 => "+NS_0+",", "NS_1 => "+NS_1+",", "C_fsm => "+to_string(CurrentStateFsm)+",", "N_fsm => "+to_string(NextStateFsm)+",", "y => \""+sp.y+"\")"});
+             k2++;
         }
     }
     else
@@ -502,7 +502,6 @@ void MakeTypeState2(ifstream &source, ofstream &dest) // Write the values of the
 
             // Write signal declaration
             dest << "\tsignal s0 : state;" << endl;
-            dest << "\tshared variable y1: std_logic_vector(y'range) := (others => '0');" << endl;
         }
     }
 
@@ -669,10 +668,10 @@ void Fill_state_product(ifstream &source, ofstream &destin)
         // Add the state_product instance to the vector
         stateProducts.push_back(sp);
 
-        // Add contents to testarray
+        // Add contents to test array
         static int k = 0;
-        testarray.push_back(("\t" + to_string(k++) + "\t=> (x => \"" + sp.x + "\",\tCS => " + sp.cs +
-                             ",\tNS => " + sp.ns + ",\ty => \"" + sp.y + "\")"));
+        newarr1.push_back({"    ", to_string(k), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS => "+sp.cs+",", "NS => "+sp.ns+",", "y => \""+sp.y+"\")"});
+        k++;
     }
 }
 
@@ -761,12 +760,12 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     }
 
     // Create new files in the destination folder
-    ofstream TbVhd       (dir_select + "\\tb_" +         SourceName + ".vhd");
-    ofstream TbPackageVhd(dir_select + "\\tb_package_" + SourceName + ".vhd");
-    ofstream VcdDoTb     (dir_select + "\\vcdrun_" +     SourceName +  ".do");
-    ofstream DoComp      (dir_select + "\\compile" +                   ".do");
-    ofstream top_vhd     (dir_select + "\\top_" +        SourceName + ".vhd");
-    ofstream top_pack    (dir_select + "\\top_pack_" +   SourceName + ".vhd");
+    ofstream TbVhd       (dir_select + "\\tb_" +        SourceName + ".vhd");
+    ofstream TbPackageVhd(dir_select + "\\pack_tb_" +   SourceName + ".vhd");
+    ofstream VcdDoTb     (dir_select + "\\vcdrun_" +    SourceName +  ".do");
+    ofstream DoComp      (dir_select + "\\compile" +                  ".do");
+    ofstream top_vhd     (dir_select + "\\top_" +       SourceName + ".vhd");
+    ofstream top_pack    (dir_select + "\\pack_top_" +  SourceName + ".vhd");
 
     
 
@@ -795,15 +794,15 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     ReplaceSymbolsInNewFile(TbTemplate, TbVhd, {"$"}, {SourceName});
     
     if (num_clocks == 1){
-    ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, type_state.str(), to_string(testarray.size()-1), "\0"},
-                            "?q", num_clocks);
+        ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, type_state.str(), to_string(newarr1.size()-1), "\0"},
+                            "?q", newarr1,  num_clocks);
     }
 
     else {
         ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, state_decleration, to_string(testarray2.size()-1), "\0"},
-                            "?q", num_clocks);
+                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, state_decleration, to_string(newarr2.size()-1), "\0"},
+                            "?q", newarr2, num_clocks);
     }
 
     ReplaceSymbolsInNewFile(TopTemplate, top_vhd, {"$", "?x", "?y", "?c"}, {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1)});
@@ -847,12 +846,15 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 /* Overload number 2*/
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, int num_clocks)
+void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, vector<vector<string>> newarr, int num_clocks)
 { 
     string line;
     size_t pos;
-    vector<string> triggerArray;
-    triggerArray = (num_clocks == 1) ? testarray : testarray2;
+    int stdig = to_string(states).length();
+    int col_widths1[] = {4, 4, 4, 15+input, 15+stdig, 15+stdig, 9+output};
+    int col_widths2[] = {4, 4, 4, 15+input, 20+stdig, 20+stdig, 20+stdig, 20+stdig, 20+stdig, 20+stdig, 9+output};
+    int *col_widths;
+    col_widths = (num_clocks == 1) ? col_widths1 : col_widths2;
     while (getline(srcfile, line))
     {
         for (size_t i = 0; i < symbols.size(); i++)
@@ -862,10 +864,14 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
             {
                 if (symbols[i] == triggerSymbol)
                     {
-                        for(int j = 0; j < triggerArray.size(); j++)
+                        size_t index = 0;
+                        for (const auto& row : newarr)
                         {
-                            dstfile << replace_x_dontcare(triggerArray[j]);
-                            if(j < triggerArray.size()-1)
+                            for (size_t j = 0; j < row.size(); j++)
+                                {
+                                    dstfile << left << setw(col_widths[j]) << row[j];
+                                }
+                            if (++index < newarr.size())
                                 dstfile << "," << endl;
                         }
                         line = "";
