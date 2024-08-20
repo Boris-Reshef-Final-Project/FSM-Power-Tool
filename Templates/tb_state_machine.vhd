@@ -49,7 +49,13 @@ begin
 
 
   ----- Generate clock(s) signal(s) -----
-  clk <= not clk after clk_period/2;
+  genclk: process begin
+    while simend = 0 loop
+      clk <= not clk;
+      wait for clk_period/2;
+    end loop;
+    wait;
+  end process genclk;
   test_clk <= or clk; -- easy way to get a single clock signal for the stimulus
 
 
