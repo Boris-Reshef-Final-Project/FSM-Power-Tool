@@ -52,29 +52,43 @@ begin
 
   -- Test process
   stimulus : process is
-    alias CS is       << signal DUT.G1.FSM.s0 : state >>;;
+    alias CS is       << signal DUT.G1.FSM.s0 : state >>;
   begin
     
     x <= (others => '0');
     wait for 1 ns;
     wait until rising_edge(clk(0)); -- wait for PLL to lock
     rst <= '0' after 2 * clk_period; -- Release reset after 2cc
-    
+    wait for 4 * clk_period;
 
     for i in test_array'range loop
+     wait until rising_edge(clk(0));
+	 x <= test_array(i).x;
       -- Apply input stimulus
       CS <= force test_array(i).CS;
+	  wait for 0 ns;
       wait until rising_edge(clk(0));
-      CS <= release;
-      x <= test_array(i).x;
-      -- Wait for the next clock edge
-      wait until rising_edge(clk(0));
-      -- Check the output and Assert the result of y and NS (CS should now be the next state)
-      assert (y = test_array(i).y) and (CS = test_array(i).NS) 
-        report "Bad product at line " & integer'image(i) & LF &
-               "Expected: y = " & to_string(test_array(i).y) & " ; NS = " & to_string(test_array(i).NS) & LF &
-               "Got:      y = " & to_string(y)               & " ; NS = " & to_string(CS) & LF
-              severity warning;
+	  
+	  CS <= release;
+	  wait for 0 ns;
+      --x <= test_array(i).x;
+	  assert (y = test_array(i).y)
+        report "Immediate check failed at line " & integer'image(i) & ": Expected y = " & to_string(test_array(i).y) & ", Got y = " & to_string(y)
+        severity warning;
+		
+	  --wait on y for clk_period/10;
+	  
+	  
+		
+	   assert (CS = test_array(i).NS)
+        report "State check failed at line " & integer'image(i) & ": Expected NS = " & to_string(test_array(i).NS) & ", Got NS = " & to_string(CS)
+        severity warning;
+		
+		Assert (not ((y = test_array(i).y) and (CS = test_array(i).NS)))
+			  report "Good product at line " & integer'image(i) severity note;
+		
+		
+		 wait for 2 * clk_period;
     end loop; 
 
     wait;

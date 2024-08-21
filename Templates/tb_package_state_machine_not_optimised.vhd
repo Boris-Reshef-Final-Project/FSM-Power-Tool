@@ -25,7 +25,7 @@ package pack_tb_$ is
   -- constants and types
   constant num_inputs   : positive  := ?x; -- number of inputs -1
   constant num_outputs  : positive  := ?y; -- number of outputs -1
-  constant num_clocks   : positive  := ?c; -- number of clocks -1
+  constant num_clocks   : natural  := ?c; -- number of clocks -1
   constant clk_period   : time      := ?t; -- clock period, usually 10 ns
   -- state type
   ?s
