@@ -262,7 +262,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         getline(cin, Opt);
         cout << endl;
         if (Opt == "1")
-            Optimiser_Axe(source, cfsm); // Located After (Fill_state_product) && Before (FSM2Process) √√√√√√√√√
+            Optimiser_Axe(source, cfsm);
         else if (Opt == "2"){
             auto start = chrono::high_resolution_clock::now();
             find_best_probabilities(states, transitionProbMap,CfsmAmount);
@@ -272,6 +272,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
             cout << "Time taken: " << duration.count() << " seconds" << endl;
         }
 
+        int k = 0;
         for (const auto& sp : stateProducts) {
             int CurrentStateFsm = find_cfsm(sp.cs);
             int NextStateFsm = find_cfsm(sp.ns);
@@ -294,11 +295,10 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                 NS_0 = "st0_wait";
                 NS_1 = sp.ns;
             }
-
-            static int k2 = 0;
-            newarr2.push_back({"    ", to_string(k2), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS_0 => "+CS_0+",", "CS_1 => "+CS_1+",",
+            newarr1.push_back({"    ", to_string(k), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS => "+sp.cs+",", "NS => "+sp.ns+",", "y => \""+sp.y+"\")"});
+            newarr2.push_back({"    ", to_string(k), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS_0 => "+CS_0+",", "CS_1 => "+CS_1+",",
              "NS_0 => "+NS_0+",", "NS_1 => "+NS_1+",", "C_fsm => "+to_string(CurrentStateFsm)+",", "N_fsm => "+to_string(NextStateFsm)+",", "y => \""+sp.y+"\")"});
-             k2++;
+             k++;
         }
     }
     else
@@ -598,6 +598,7 @@ void Fill_state_product(ifstream &source, ofstream &destin)
 {
     unordered_map<string, string> stateMap; // To map states to state names
     string line;
+    int k = 0;
 
     for (int i = 0; i < states; ++i) // Generate format list for states
         State_list.push_back("st" + to_string(i));
@@ -666,12 +667,7 @@ void Fill_state_product(ifstream &source, ofstream &destin)
         else
             sp.ns = stateMap[sp.ns];
         // Add the state_product instance to the vector
-        stateProducts.push_back(sp);
-
-        // Add contents to test array
-        static int k = 0;
-        newarr1.push_back({"    ", to_string(k), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS => "+sp.cs+",", "NS => "+sp.ns+",", "y => \""+sp.y+"\")"});
-        k++;
+        stateProducts.push_back(sp);        
     }
 }
 
