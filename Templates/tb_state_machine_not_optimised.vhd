@@ -2,20 +2,21 @@
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 Project:        FSM-Power-Tool
-File:           tb_state_machine_not_optimised.vhd
+File:           tb_$.vhd
+Template        tb_state_machine_not_optimised.vhd
 Authors:        Boris Karasov, Reshef Schachter
 Date:           2023-2024
 Institution:    Afeka College of Engineering
 Description:    This is our final project for our Bachelor's degree in Electrical Engineering.
 Notes:          The project is meant to work with a VHDL2008 compiler and a C++17 compiler.
-File Description: This file is the testbench for the state machine. It is a universal testbench that can be used the state machines
-  that are produced by our project. For the TB to work it requires the package file as well.
+Description:    This file is the testbench for the state machine. It is a universal testbench that can be used the state machines
+                that are produced by our project. For the TB to work it requires the package file as well.
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------**/
 
 
--- THIS IS FOR THE NOT-OPTIMISED VERSION!!!!
+-- This is the TB file for the machine WITHOUT (X) OPTIMISATION!!!!
 
 
 library ieee;
@@ -40,58 +41,57 @@ architecture arc_tb_universal of tb_$ is
   
 begin
 
-  -- Instantiate the device under test (DUT)
+  -- Create instance of the device under test (DUT)
   DUT : entity work.top_$
     generic map (simulation => true, power_analyzer => false, baseline_power => false, full_fpga => false, duplicates => 1)
     port    map (rst => rst, clk => clk, x => x, y => y);
 
-  -- Generate clock(s) with enable
+  -- Generate clock(s)
   -- This is going to be replaced with the PLL in the physical tests.
   clk <= not clk after (clk_period/2);
 
 
   -- Test process
   stimulus : process is
-    alias CS is       << signal DUT.G1.FSM.s0 : state >>;
+    alias CS is << signal DUT.G1.FSM.s0 : state >>;
   begin
     
     x <= (others => '0');
     wait for 1 ns;
-    wait until rising_edge(clk(0)); -- wait for PLL to lock
+    wait until rising_edge(clk(0));
     rst <= '0' after 2 * clk_period; -- Release reset after 2cc
     wait for 4 * clk_period;
 
     for i in test_array'range loop
-     wait until rising_edge(clk(0));
-	 x <= test_array(i).x;
+      
+      wait until rising_edge(clk(0));
       -- Apply input stimulus
+      x <= test_array(i).x;
       CS <= force test_array(i).CS;
-	  wait for 0 ns;
+	    wait for 0 ns;
       wait until rising_edge(clk(0));
 	  
-	  CS <= release;
-	  wait for 0 ns;
-      --x <= test_array(i).x;
-	  assert (y = test_array(i).y)
-        report "Immediate check failed at line " & integer'image(i) & ": Expected y = " & to_string(test_array(i).y) & ", Got y = " & to_string(y)
-        severity warning;
-		
-	  --wait on y for clk_period/10;
-	  
-	  
-		
-	   assert (CS = test_array(i).NS)
-        report "State check failed at line " & integer'image(i) & ": Expected NS = " & to_string(test_array(i).NS) & ", Got NS = " & to_string(CS)
-        severity warning;
-		
-		Assert (not ((y = test_array(i).y) and (CS = test_array(i).NS)))
-			  report "Good product at line " & integer'image(i) severity note;
-		
-		
-		 wait for 2 * clk_period;
-    end loop; 
+      CS <= release;
+      wait for 0 ns;
 
+      assert (y = test_array(i).y)
+          report "Immediate check failed at line " & integer'image(i) & ": Expected y = " & to_string(test_array(i).y) & ", Got y = " & to_string(y)
+          severity warning;
+      assert (CS = test_array(i).NS)
+          report "State check failed at line " & integer'image(i) & ": Expected NS = " & to_string(test_array(i).NS) & ", Got NS = " & to_string(CS)
+          severity warning;
+      
+      Assert (not ((y = test_array(i).y) and (CS = test_array(i).NS)))
+          report "Good product at line " & integer'image(i) 
+          severity note;
+      
+      wait for 2 * clk_period;
+
+    end loop;
+    
+    report "Testbench finished" severity note;
     wait;
+
   end process stimulus;
 
 end architecture arc_tb_universal;

@@ -2,20 +2,21 @@
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 Project:        FSM-Power-Tool
-File:           tb_state_machine.vhd
+File:           tb_$.vhd
+Template        tb_state_machine.vhd
 Authors:        Boris Karasov, Reshef Schachter
 Date:           2023-2024
 Institution:    Afeka College of Engineering
 Description:    This is our final project for our Bachelor's degree in Electrical Engineering.
 Notes:          The project is meant to work with a VHDL2008 compiler and a C++17 compiler.
-File Description: This file is the testbench for the state machine. It is a universal testbench that can be used the state machines
-  that are produced by our project. For the TB to work it requires the package file as well.
+Description:    This file is the testbench for the state machine. It is a universal testbench that can be used the state machines
+                that are produced by our project. For the TB to work it requires the package file as well.
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------**/
 
 
--- THIS IS FOR THE OPTIMIZED VERSION!!!!
+-- This is the TB file for the machine WITH (V) OPTIMISATION!!!!
 
 
 library ieee;
