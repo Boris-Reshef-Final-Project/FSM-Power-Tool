@@ -34,10 +34,13 @@ entity tb_$ is
 end entity tb_$;
 
 architecture arc_tb_universal of tb_$ is
-  signal rst : std_logic := '1';
-  signal clk : std_logic_vector(num_clocks  downto 0) := (others => '0');
-  signal x   : std_logic_vector(num_inputs  downto 0) := (others => '0');
-  signal y   : std_logic_vector(num_outputs downto 0);
+  
+  -- Signals
+  signal rst  : std_logic := '1';
+  signal clk  : std_logic_vector(num_clocks  downto 0) := (others => '0');
+  signal x    : std_logic_vector(num_inputs  downto 0) := (others => '0');
+  signal y    : std_logic_vector(num_outputs downto 0);
+  signal done : boolean := false;
   
 begin
 
@@ -46,10 +49,15 @@ begin
     generic map (simulation => true, power_analyzer => false, baseline_power => false, full_fpga => false, duplicates => 1)
     port    map (rst => rst, clk => clk, x => x, y => y);
 
+  
   -- Generate clock(s)
-  -- This is going to be replaced with the PLL in the physical tests.
-  clk <= not clk after (clk_period/2);
-
+  genclk: process begin
+    while not done loop
+      clk <= not clk;
+      wait for clk_period/2;
+    end loop;
+    wait;
+  end process genclk;
 
   -- Test process
   stimulus : process is
@@ -88,7 +96,7 @@ begin
       wait for 2 * clk_period;
 
     end loop;
-    
+    done <= true;
     report "Testbench finished" severity note;
     wait;
 
