@@ -324,23 +324,25 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     {
         destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
         destin << "\t\t" << "if(rst = '1') then" << endl;
-
+       
         switch (j)
         {
             case 0:
                 destin << "\t\t\t" << "s" << j << "\t<=\tst0;" << endl;
+                destin << "\t\t\t" << "clken("<< 1 << ")<='0';"<< endl;
                 break;
 
             default:
                 destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+                destin << "\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
                 break;
         }
 
-        if ((j != find_cfsm("st0")) && (CfsmAmount != 1))
-            destin << "\t\t\t" << "z(0)" << " := '1';" << endl;
+        /*if ((j != find_cfsm("st0")) && (CfsmAmount != 1))
+            destin << "\t\t\t" << "z(0)" << " := '1';" << endl;*/
 
-        destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl;
-        if (CfsmAmount != 1){
+        destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl << endl;
+        /*if (CfsmAmount != 1){
             if (j >= 0 && j < cfsm.size())
             {
                 for (const string &state : cfsm[1 - j])
@@ -349,7 +351,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                     destin << "\t\tz(" << stateNumber << ") := '0';" << endl;
                 }
             }
-        }
+        }*/
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
@@ -358,7 +360,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
 
         destin << "\t\t" << "end if;" << endl;
         if (CfsmAmount != 1){
-            if (j >= 0 && j < cfsm.size())
+            /*if (j >= 0 && j < cfsm.size())
             {
                 int otherCfsmIndex = (j == 0) ? 1 : 0; // Determine the other CFSM index
                 destin << "\tclken(" << otherCfsmIndex << ") <= ";
@@ -371,7 +373,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                     else
                         destin << ";" << endl;
                 }
-            }
+            }*/
             destin << "\t" << "sig_y" << j << " <= y" << j << ";" << endl;
         }
         destin << "\t" << "end process cfsm" << j << ";\n\n";
@@ -439,49 +441,58 @@ void MakeIODecleration(ifstream &source, ofstream &destin)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm) {
-    ostringstream type_state;
-    int CfsmAmount = cfsm.size();
-    int states=0;
-    
-    for (const auto &v : cfsm) {
-        states += v.size();
+    void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm) {
+        ostringstream type_state;
+        int CfsmAmount = cfsm.size();
+        int states=0;
+        
+        for (const auto &v : cfsm) {
+            states += v.size();
+        }
+
+        // First part: type state_0
+        type_state << "\ntype state_0 is (";
+        for (int i = 0; i < cfsm[CfsmAmount - 2].size(); ++i) {
+            type_state << cfsm[CfsmAmount - 2][i];
+            if (i < cfsm[CfsmAmount - 2].size() - 1)
+                type_state << ", ";
+        }
+        type_state << ", st0_wait);" << endl;
+
+
+        // Second part: type state_1
+        type_state << "type state_1 is (";
+        for (int i = 0; i < cfsm[CfsmAmount - 1].size(); ++i) {
+            type_state << cfsm[CfsmAmount - 1][i];
+            if (i < cfsm[CfsmAmount - 1].size() - 1)
+                type_state << ", ";
+        }
+        type_state << ", st1_wait);" << endl;
+        state_decleration = type_state.str();
+
+        // Adding signals
+        type_state << "signal s0 : state_0;" << endl;
+        type_state << "signal s1 : state_1;" << endl;
+
+        // Adding shared variables
+        for (int i = 0; i < CfsmAmount; ++i) {
+            type_state << "shared variable y" << i << ": std_logic_vector(y'range) := (others => '0');" << endl;
+            type_state << "signal sig_y" << i << ": std_logic_vector(y'range);" << endl;
+        }
+        type_state << "signal z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n" << endl;
+        
+
+        int lower_bound = 0;
+        for (int i = 0; i < CfsmAmount; ++i) {
+            int upper_bound = lower_bound + cfsm[i].size() - 1;
+            type_state << "alias z" << i << " : std_logic_vector(" << upper_bound << " downto " << lower_bound << ") is z(" 
+            << upper_bound << " downto " << lower_bound << ");" << endl;
+            lower_bound = upper_bound + 1;
+        }
+
+        // Writing to the destination
+        destin << "\t" << type_state.str();
     }
-
-    // First part: type state_0
-    type_state << "\ntype state_0 is (";
-    for (int i = 0; i < cfsm[CfsmAmount - 2].size(); ++i) {
-        type_state << cfsm[CfsmAmount - 2][i];
-        if (i < cfsm[CfsmAmount - 2].size() - 1)
-            type_state << ", ";
-    }
-    type_state << ", st0_wait);" << endl;
-
-
-    // Second part: type state_1
-    type_state << "type state_1 is (";
-    for (int i = 0; i < cfsm[CfsmAmount - 1].size(); ++i) {
-        type_state << cfsm[CfsmAmount - 1][i];
-        if (i < cfsm[CfsmAmount - 1].size() - 1)
-            type_state << ", ";
-    }
-    type_state << ", st1_wait);" << endl;
-    state_decleration = type_state.str();
-
-    // Adding signals
-    type_state << "signal s0 : state_0;" << endl;
-    type_state << "signal s1 : state_1;" << endl;
-
-    // Adding shared variables
-    for (int i = 0; i < CfsmAmount; ++i) {
-        type_state << "shared variable y" << i << ": std_logic_vector(y'range) := (others => '0');" << endl;
-        type_state << "signal sig_y" << i << ": std_logic_vector(y'range);" << endl;
-    }
-    type_state << "shared variable z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n" << endl;
-
-    // Writing to the destination
-    destin << "\t" << type_state.str();
-}
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -534,7 +545,7 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
                         int nextStateNumber = stoi(stateProducts[k].ns.substr(2));
                         destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st"<<j<<"_wait;" << endl;
                         destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") := '1';" << endl; // z(ns) = 1
-
+                        destin << "\t\t\t\t\t\t\t" << "clken("<< find_cfsm(stateProducts[k].ns) << ")<='1';"<< endl;
                     }
                 }
             }
@@ -572,6 +583,15 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
     if (CfsmAmount != 1){
         destin << "\t\t\t\t" << "when st"<<j<<"_wait=>" << endl;
         destin << "\t\t\t\t\t" << "y" << j << " := (others => '0');" << endl;
+        if (j == 0){
+        destin << "\t\t\t\t\t" << "clken("<< j+1 << ")<='0';"<< endl;
+        destin << "\t\t\t\t\tz1 <= z1;"<< endl;
+        }
+        else if (j==1){
+            destin << "\t\t\t\t\t" << "clken("<< 0 << ")<='0';"<< endl;
+            destin << "\t\t\t\t\tz0 <= z0;"<< endl;
+        }
+
         if (j >= 0 && j < cfsm.size()) {
             destin << "\t\t\t\t\tif ";
             for (size_t i = 0; i < cfsm[j].size(); ++i) {
@@ -585,6 +605,17 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
             }
             destin << "\t\t\t\t\telse" << endl;
             destin << "\t\t\t\t\t\ts" << j << " <= st" << j << "_wait;" << endl;
+
+             if (j == 0){
+        destin << "\t\t\t\t\t\t" << "clken("<< j+1 << ")<='1';"<< endl;
+        destin << "\t\t\t\t\t\tz1 <= (others => '0');"<< endl;
+        }
+        else if (j==1){
+            destin << "\t\t\t\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
+            destin << "\t\t\t\t\t\tz0 <= (others => '0');"<< endl;
+        }
+            
+
             destin << "\t\t\t\t\tend if;" << endl;
         }
     }
