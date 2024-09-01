@@ -544,7 +544,7 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
                     {
                         int nextStateNumber = stoi(stateProducts[k].ns.substr(2));
                         destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st"<<j<<"_wait;" << endl;
-                        destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") := '1';" << endl; // z(ns) = 1
+                        destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") <= '1';" << endl; // z(ns) = 1
                         destin << "\t\t\t\t\t\t\t" << "clken("<< find_cfsm(stateProducts[k].ns) << ")<='1';"<< endl;
                     }
                 }
