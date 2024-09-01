@@ -130,6 +130,7 @@ void Optimiser_Min_trans_prob(
     vector<vector<string>>& cfsm);
 void CreateSubFolders();
 
+
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 map<int, string> primitive_polynomials = {
@@ -325,10 +326,10 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
         destin << "\t\t" << "if(rst = '1') then" << endl;
        
-        switch (j)
+        /*switch (j)
         {
             case 0:
-                destin << "\t\t\t" << "s" << j << "\t<=\tst0;" << endl;
+                destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] <<";" << endl;
                 destin << "\t\t\t" << "clken("<< 1 << ")<='0';"<< endl;
                 break;
 
@@ -336,7 +337,48 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
                 destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
                 destin << "\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
                 break;
+        }*/
+
+     
+
+
+        int st0_row = -1, st0_col = -1;
+    for (int row = 0; row < cfsm.size(); ++row) {
+    for (int col = 0; col < cfsm[row].size(); ++col) {
+        if (cfsm[row][col] == "st0") {
+            st0_row = row;
+            st0_col = col;
+            break;
         }
+    }
+    if (st0_row != -1) break; // Stop searching if "st0" is found
+    }
+
+switch (j) {
+    case 0:
+        if (st0_row == 0) {
+            // st0 is in cfsm[0], use cfsm[0][0]
+            destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] << ";" << endl;
+            destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
+        } else if (st0_row == 1) {
+            // st0 is in cfsm[1], use st0_wait
+            destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+            destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
+        }
+        break;
+
+    default:
+        if (st0_row == 1 && j == 1) {
+            // Assign correct state if st0 is in cfsm[1] and j is 1
+            destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[1][0] << ";" << endl;
+            destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
+        } else {
+            // Default case for other situations
+            destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+            destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
+        }
+        break;
+}
 
         /*if ((j != find_cfsm("st0")) && (CfsmAmount != 1))
             destin << "\t\t\t" << "z(0)" << " := '1';" << endl;*/
