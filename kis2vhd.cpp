@@ -322,66 +322,67 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     else if (CfsmAmount == 1)
         MakeTypeState2(source, destin);
 
-    destin << "begin" << endl
-           << endl;
+    destin << "begin" << endl << endl;
     if (CfsmAmount == 1)
         destin << "\tclken(0) <= '1';" << endl;
-
+    
     for (j = 0; j < CfsmAmount; j++)
     {
-        destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n"
-               << endl;
+        destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
         destin << "\t\t" << "if(rst = '1') then" << endl;
-
-        int st0_row = -1, st0_col = -1;
-        for (int row = 0; row < cfsm.size(); ++row)
+        if (CfsmAmount == 1)
+            destin << "\t\t\t" << "s0" << "\t<=\tst0;" << endl;
+        else
         {
-            for (int col = 0; col < cfsm[row].size(); ++col)
+            int st0_row = -1, st0_col = -1;
+            for (int row = 0; row < cfsm.size(); ++row)
             {
-                if (cfsm[row][col] == "st0")
+                for (int col = 0; col < cfsm[row].size(); ++col)
                 {
-                    st0_row = row;
-                    st0_col = col;
-                    break;
+                    if (cfsm[row][col] == "st0")
+                    {
+                        st0_row = row;
+                        st0_col = col;
+                        break;
+                    }
                 }
+                if (st0_row != -1)
+                    break; // Stop searching if "st0" is found
             }
-            if (st0_row != -1)
-                break; // Stop searching if "st0" is found
+
+            switch (j)
+            {
+            case 0:
+                if (st0_row == 0)
+                {
+                    // st0 is in cfsm[0], use cfsm[0][0]
+                    destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] << ";" << endl;
+                    destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
+                }
+                else if (st0_row == 1)
+                {
+                    // st0 is in cfsm[1], use st0_wait
+                    destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+                    destin << "\t\t\t" << "clken(" << 1 << ")<='1';" << endl;
+                }
+                break;
+
+            default:
+                if (st0_row == 1 && j == 1)
+                {
+                    // Assign correct state if st0 is in cfsm[1] and j is 1
+                    destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[1][0] << ";" << endl;
+                    destin << "\t\t\t" << "clken(" << 0 << ")<='0';" << endl;
+                }
+                else
+                {
+                    // Default case for other situations
+                    destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+                    destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
+                }
+                break;
+            }
         }
-
-        switch (j)
-        {
-        case 0:
-            if (st0_row == 0)
-            {
-                // st0 is in cfsm[0], use cfsm[0][0]
-                destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] << ";" << endl;
-                destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
-            }
-            else if (st0_row == 1)
-            {
-                // st0 is in cfsm[1], use st0_wait
-                destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
-                destin << "\t\t\t" << "clken(" << 1 << ")<='1';" << endl;
-            }
-            break;
-
-        default:
-            if (st0_row == 1 && j == 1)
-            {
-                // Assign correct state if st0 is in cfsm[1] and j is 1
-                destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[1][0] << ";" << endl;
-                destin << "\t\t\t" << "clken(" << 0 << ")<='0';" << endl;
-            }
-            else
-            {
-                // Default case for other situations
-                destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
-                destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
-            }
-            break;
-        }
-
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl
                << endl;
 

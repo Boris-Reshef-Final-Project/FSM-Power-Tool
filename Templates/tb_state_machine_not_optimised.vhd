@@ -65,6 +65,7 @@ begin
   stimulus : process is
     alias CS is << signal DUT.G1.FSM.s0 : state >>;
 
+    variable l          : line;
     variable good_lines : integer := 0;
     variable repeat     : integer := 0;
     variable run_time   : time := 0 ns;
