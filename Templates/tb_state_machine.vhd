@@ -138,7 +138,7 @@ begin
                 report "State check failed at line " & integer'image(i) & ": Expected NS_1 = " & to_string(test_array(i).NS_1) & ", Got NS_1 = " & to_string(CS_1)
                 severity warning;
           end if;
-          if (error_reporting = 2)
+          if (error_reporting = 2) then
             Assert (not ((y'delayed(clk_period/2) = test_array(i).y) and (CS_0 = test_array(i).NS_0) and (CS_1 = test_array(i).NS_1)))
                 report "Good product at line " & integer'image(i) 
                 severity note;
