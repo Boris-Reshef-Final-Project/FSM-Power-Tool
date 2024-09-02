@@ -26,8 +26,8 @@ package pack_tb_$ is
   constant num_inputs   : integer  := ?x; -- number of inputs -1
   constant num_outputs  : integer  := ?y; -- number of outputs -1
   constant num_clocks   : integer  := ?c; -- number of clocks -1
-  constant clk_period   : time      = ?t; -- clock period, usually 10 ns
-  constant run_length   : time      =  @; -- simulation run length
+  constant clk_period   : time     := ?t; -- clock period, usually 10 ns
+  constant run_length   : time     := @; -- simulation run length
   -- state type
   ?s
 

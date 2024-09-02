@@ -885,14 +885,14 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     if (num_clocks == 1)
     {
         ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q", "@"},
-                                {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1), clockPeriod, type_state.str(), to_string(newarr1.size() - 1), "\0", , vcdRunTime},
+                                {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1), clockPeriod, type_state.str(), to_string(newarr1.size() - 1), "\0", vcdRunTime},
                                 "?q", newarr1, num_clocks);
     }
 
     else
     {
         ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q", "@"},
-                                {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1), clockPeriod, state_decleration, to_string(newarr2.size() - 1), "\0", , vcdRunTime},
+                                {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1), clockPeriod, state_decleration, to_string(newarr2.size() - 1), "\0", vcdRunTime},
                                 "?q", newarr2, num_clocks);
     }
 

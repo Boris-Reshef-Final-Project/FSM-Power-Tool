@@ -103,7 +103,7 @@ begin
               severity note;
             write(l, string'("")); writeline(OUTPUT, l); -- write empty line to the console to make it more readable
           end if;
-          if (not ((y = test_array(i).y) and (CS = test_array(i).NS))) then
+          if ((y = test_array(i).y) and (CS = test_array(i).NS)) then
             good_lines := good_lines + 1;
           end if;
         end if;
@@ -115,7 +115,7 @@ begin
     done <= true;
     report "Testbench finished" severity note;
     assert good_lines = test_array'length
-      report "Result:  Pass=" & to_string(good_lines) & LF & "         " & "Fail=" & to_string(test_array'length - good_lines) severity warning;
+      report "Result:  Pass=" & to_string(good_lines) & "Fail=" & to_string(test_array'length - good_lines) severity warning;
     assert good_lines /= test_array'length
       report "Result: All lines good." severity note;
     wait;

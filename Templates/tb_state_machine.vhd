@@ -153,10 +153,11 @@ begin
             write(l, string'("")); writeline(OUTPUT, l); -- write empty line to the console to make it more readable
           end if;
           
-          if (not ((y'delayed(clk_period/2) = test_array(i).y) and (CS_0 = test_array(i).NS_0) and (CS_1 = test_array(i).NS_1))) then
+          if ((y'delayed(clk_period/2) = test_array(i).y) and (CS_0 = test_array(i).NS_0) and (CS_1 = test_array(i).NS_1)) then
             good_lines := good_lines + 1;
           end if;
         end if;
+        good_lines := good_lines;
       end loop;
       repeat := repeat + 1;
       run_time := now - start_time;
@@ -165,7 +166,7 @@ begin
     done <= true;
     report "Testbench finished" severity note;
     assert good_lines = test_array'length
-      report "Result:  Pass=" & to_string(good_lines) & LF & "         " & "Fail=" & to_string(test_array'length - good_lines) severity warning;
+      report "Result:  Pass=" & to_string(good_lines) & "Fail=" & to_string(test_array'length - good_lines) severity warning;
     assert good_lines /= test_array'length
       report "Result: All lines good." severity note;
     wait;
