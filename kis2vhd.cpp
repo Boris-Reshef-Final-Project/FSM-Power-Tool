@@ -41,13 +41,14 @@ using namespace std;
 /*===============================*/
 
 // Structure to store results
-struct Result {
+struct Result
+{
     vector<string> cfsm0;
     vector<string> cfsm1;
     double pt1;
     double pt2;
     double sum_pt;
-    };
+};
 
 struct state_product
 {
@@ -59,20 +60,19 @@ struct state_product
 
 vector<state_product> stateProducts;
 vector<vector<string>> cfsm; // Vector to store the states of each cfsm
-state_product sp; // Create a Global state_product instance
+state_product sp;            // Create a Global state_product instance
 string ProjectFolder;
 string SourceName;
-string NewLocation,NewLocation2;
-string templateFolder    = "Templates";   // Name of template folder
-string destinationFolder = "optimised";     // Name of destination folder
+string NewLocation, NewLocation2;
+string templateFolder = "Templates";    // Name of template folder
+string destinationFolder = "optimised"; // Name of destination folder
 string destinationFolder2 = "not-optimised";
-stringstream type_state;                    // String stream to store the type state line
-vector<string> State_list;                  // Vector to store the state names
-vector<vector<string>> newarr1, newarr2;    // Vector to test array for the TB
-string Original_Reset_state_code;           // The name (code) of the original reset state in the Kiss file
-string state_decleration;                   // String to store the state decleration line
-int input, output, products, states;        // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
-
+stringstream type_state;                 // String stream to store the type state line
+vector<string> State_list;               // Vector to store the state names
+vector<vector<string>> newarr1, newarr2; // Vector to test array for the TB
+string Original_Reset_state_code;        // The name (code) of the original reset state in the Kiss file
+string state_decleration;                // String to store the state decleration line
+int input, output, products, states;     // Number of inputs, outputs, products, and states as declared in the Kiss file preamble
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -80,73 +80,72 @@ int input, output, products, states;        // Number of inputs, outputs, produc
 /*      Function Prototypes      */
 /*===============================*/
 
-int  KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin);
+int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin);
 void MakeIODecleration(ifstream &source, ofstream &destin);
 void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm);
 void MakeTypeState2(ifstream &source, ofstream &dest);
 void FSM2Process(int j, ofstream &destin, int CfsmAmount);
 void Fill_state_product(ifstream &source, ofstream &destin);
 bool isStringInVector(const string &str, const vector<string> &vec);
-int  find_cfsm(string state);
+int find_cfsm(string state);
 void Optimiser_Axe(ifstream &source, vector<vector<string>> &cfsm);
 void calculate_transition_probabilities_V1(const vector<state_product> &stateProducts, map<pair<string, string>, double> &transitionProbs);
 void Use_Templates(int num_clocks);
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements);
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, vector<vector<string>> newarr, int num_clocks);
+void ReplaceSymbolsInNewFile(ifstream &srcfile, ofstream &dstfile, const vector<string> &symbols, const vector<string> &replacements);
+void ReplaceSymbolsInNewFile(ifstream &srcfile, ofstream &dstfile, const vector<string> &symbols, const vector<string> &replacements, const string &triggerSymbol, vector<vector<string>> newarr, int num_clocks);
 string replace_x_dontcare(string s);
 void Return2Beginning(ifstream &file);
-vector<double> calc_product_prob(const vector<state_product>& stateProducts);
-void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states);
+vector<double> calc_product_prob(const vector<state_product> &stateProducts);
+void calc_state_prob_V1(unordered_map<string, double> &stateProbMap, const vector<string> &State_list, int states);
 unordered_map<string, unordered_map<string, double>> map_state_prob(
-    const vector<state_product>& stateProducts, 
-    const unordered_map<string, double>& stateProbMap,
-    const vector<double>& productProbabilities);
-bool compare_pt1(const Result& a, const Result& b);
-bool compare_pt2(const Result& a, const Result& b);
-bool compare_sum_pt(const Result& a, const Result& b);
+    const vector<state_product> &stateProducts,
+    const unordered_map<string, double> &stateProbMap,
+    const vector<double> &productProbabilities);
+bool compare_pt1(const Result &a, const Result &b);
+bool compare_pt2(const Result &a, const Result &b);
+bool compare_sum_pt(const Result &a, const Result &b);
 template <typename Compare>
-void update_top_results(vector<Result>& results, const Result& new_result, Compare comp);
+void update_top_results(vector<Result> &results, const Result &new_result, Compare comp);
 void find_best_probabilities_recursive(
-    const vector<string>& state_list,
-    vector<string>& current_comb,
-    vector<string>& remaining_elements,
+    const vector<string> &state_list,
+    vector<string> &current_comb,
+    vector<string> &remaining_elements,
     size_t index,
-    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
-    vector<Result>& min_pt1_vector,
-    vector<Result>& min_pt2_vector,
-    vector<Result>& min_sum_pt_vector);
+    const unordered_map<string, unordered_map<string, double>> &transitionProbMap,
+    vector<Result> &min_pt1_vector,
+    vector<Result> &min_pt2_vector,
+    vector<Result> &min_sum_pt_vector);
 void calculate_basic_probability(
-    const vector<string>& state_list,
-    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
-    vector<Result>& min_pt1_vector,
-    vector<Result>& min_pt2_vector,
-    vector<Result>& min_sum_pt_vector);
-void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap,int CfsmAmount);
+    const vector<string> &state_list,
+    const unordered_map<string, unordered_map<string, double>> &transitionProbMap,
+    vector<Result> &min_pt1_vector,
+    vector<Result> &min_pt2_vector,
+    vector<Result> &min_sum_pt_vector);
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>> &transitionProbMap, int CfsmAmount);
 void SetWorkingDirectory();
 void Optimiser_Min_trans_prob(
-    const vector<Result>& min_pt1_vector,
-    const vector<Result>& min_pt2_vector,
-    const vector<Result>& min_sum_pt_vector,
-    vector<vector<string>>& cfsm);
+    const vector<Result> &min_pt1_vector,
+    const vector<Result> &min_pt2_vector,
+    const vector<Result> &min_sum_pt_vector,
+    vector<vector<string>> &cfsm);
 void CreateSubFolders();
-
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 map<int, string> primitive_polynomials = {
-    {2,  "1,0"        },
-    {3,  "2,1"        },
-    {4,  "3,2"        },
-    {5,  "4,3,2,1"    },
-    {6,  "5,4,2,1"    },
-    {7,  "6,5,4,3"    },
-    {8,  "7,5,4,3"    },
-    {9,  "8,7,5,4"    },
-    {10, "9,8,6,5"    },
-    {11, "10,9,8,6"   },
-    {12, "11,10,7,5"  },
-    {13, "12,11,9,8"  },
-    {14, "13,12,10,8" },
+    {2, "1,0"},
+    {3, "2,1"},
+    {4, "3,2"},
+    {5, "4,3,2,1"},
+    {6, "5,4,2,1"},
+    {7, "6,5,4,3"},
+    {8, "7,5,4,3"},
+    {9, "8,7,5,4"},
+    {10, "9,8,6,5"},
+    {11, "10,9,8,6"},
+    {12, "11,10,7,5"},
+    {13, "12,11,9,8"},
+    {14, "13,12,10,8"},
     {15, "14,13,12,10"},
     {16, "15,13,12,10"},
     {17, "16,13,12,10"},
@@ -157,8 +156,7 @@ map<int, string> primitive_polynomials = {
     {22, "21,18,17,16"},
     {23, "22,21,19,17"},
     {24, "23,22,20,19"},
-    {25, "24,23,22,21"}
-};
+    {25, "24,23,22,21"}};
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -176,7 +174,7 @@ int main()
     ifstream source(ProjectFolder + SourceName + ".kis");
     NewLocation = ProjectFolder + "\\" + destinationFolder + "\\" + SourceName;
     ofstream destin(NewLocation + "\\" + SourceName + ".vhd");
-    
+
     if (!source)
     {
         cerr << "Error opening source file! " << "Reason: " << strerror(errno) << endl;
@@ -189,7 +187,7 @@ int main()
     }
 
     int CfsmAmount = 2; // Default value
-   
+
     KissFiles2Vhd(CfsmAmount, source, destin); // Preform the parsing process
 
     Use_Templates(CfsmAmount); // Create the testbench files
@@ -197,7 +195,7 @@ int main()
     destin.close();
 
     CfsmAmount = 1;
-    
+
     NewLocation2 = ProjectFolder + "\\" + destinationFolder2 + "\\" + SourceName;
     destin.open(NewLocation2 + "\\" + SourceName + ".vhd");
 
@@ -212,7 +210,9 @@ int main()
     source.close();
     destin.close();
 
-    cout << endl << endl << "Program completed successfully!" << endl;
+    cout << endl
+         << endl
+         << "Program completed successfully!" << endl;
 
     return 0;
 }
@@ -233,29 +233,27 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     destin << "\t" << "clk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
 
     MakeIODecleration(source, destin);
- 
+
     destin << "\t" << "clken\t: out\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0)" << endl;
     destin << ");" << endl;
     destin << "end entity " << SourceName << ";" << endl;
     destin << "\narchitecture arc_state_machine of " << SourceName << " is" << endl;
 
     Fill_state_product(source, destin); // Create state_list and assign values to stateProducts
-    
+
     vector<double> productProbabilities = calc_product_prob(stateProducts);
     unordered_map<string, double> stateProbMap;
 
     calc_state_prob_V1(stateProbMap, State_list, states);
 
     auto transitionProbMap = map_state_prob(stateProducts, stateProbMap, productProbabilities);
-    
 
-/*============================================================*/
+    /*============================================================*/
 
-/*                   For The Optimiser                        */
+    /*                   For The Optimiser                        */
 
-/*============================================================*/
+    /*============================================================*/
 
- 
     if (CfsmAmount != 1)
     {
         string Opt;
@@ -264,9 +262,10 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         cout << endl;
         if (Opt == "1")
             Optimiser_Axe(source, cfsm);
-        else if (Opt == "2"){
+        else if (Opt == "2")
+        {
             auto start = chrono::high_resolution_clock::now();
-            find_best_probabilities(states, transitionProbMap,CfsmAmount);
+            find_best_probabilities(states, transitionProbMap, CfsmAmount);
             auto end = chrono::high_resolution_clock::now();
             chrono::duration<double> duration = end - start;
             // Print the duration in seconds
@@ -274,42 +273,48 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         }
 
         int k = 0;
-        for (const auto& sp : stateProducts) {
+        for (const auto &sp : stateProducts)
+        {
             int CurrentStateFsm = find_cfsm(sp.cs);
             int NextStateFsm = find_cfsm(sp.ns);
 
             string CS_0, CS_1, NS_0, NS_1;
-            if (CurrentStateFsm == 0) {
+            if (CurrentStateFsm == 0)
+            {
                 CS_0 = sp.cs;
                 CS_1 = "st1_wait";
             }
-            else {
+            else
+            {
                 CS_0 = "st0_wait";
                 CS_1 = sp.cs;
             }
 
-            if (NextStateFsm == 0) {
+            if (NextStateFsm == 0)
+            {
                 NS_0 = sp.ns;
                 NS_1 = "st1_wait";
             }
-            else {
+            else
+            {
                 NS_0 = "st0_wait";
                 NS_1 = sp.ns;
             }
-            newarr1.push_back({"    ", to_string(k), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS => "+sp.cs+",", "NS => "+sp.ns+",", "y => \""+sp.y+"\")"});
-            newarr2.push_back({"    ", to_string(k), "=> (", "x => \""+replace_x_dontcare(sp.x)+"\",", "CS_0 => "+CS_0+",", "CS_1 => "+CS_1+",",
-             "NS_0 => "+NS_0+",", "NS_1 => "+NS_1+",", "C_fsm => "+to_string(CurrentStateFsm)+",", "N_fsm => "+to_string(NextStateFsm)+",", "y => \""+sp.y+"\")"});
-             k++;
+            newarr1.push_back({"    ", to_string(k), "=> (", "x => \"" + replace_x_dontcare(sp.x) + "\",", "CS => " + sp.cs + ",", "NS => " + sp.ns + ",", "y => \"" + sp.y + "\")"});
+            newarr2.push_back({"    ", to_string(k), "=> (", "x => \"" + replace_x_dontcare(sp.x) + "\",", "CS_0 => " + CS_0 + ",", "CS_1 => " + CS_1 + ",",
+                               "NS_0 => " + NS_0 + ",", "NS_1 => " + NS_1 + ",", "C_fsm => " + to_string(CurrentStateFsm) + ",", "N_fsm => " + to_string(NextStateFsm) + ",", "y => \"" + sp.y + "\")"});
+            k++;
         }
     }
     else
     {
         vector<string> firstHalf;
         cfsm.clear();
-        for (int i = 0; i < states; ++i) {
+        for (int i = 0; i < states; ++i)
+        {
             firstHalf.push_back(State_list[i]);
-        }  
-        cfsm.push_back(firstHalf);  
+        }
+        cfsm.push_back(firstHalf);
     }
 
     if (CfsmAmount == 2)
@@ -317,112 +322,83 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     else if (CfsmAmount == 1)
         MakeTypeState2(source, destin);
 
-    destin << "begin" << endl << endl;
+    destin << "begin" << endl
+           << endl;
     if (CfsmAmount == 1)
         destin << "\tclken(0) <= '1';" << endl;
 
     for (j = 0; j < CfsmAmount; j++)
     {
-        destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n" << endl;
+        destin << "\n\t" << "cfsm" << j << ": process(clk(" << j << "), rst) begin\n"
+               << endl;
         destin << "\t\t" << "if(rst = '1') then" << endl;
-       
-        /*switch (j)
-        {
-            case 0:
-                destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] <<";" << endl;
-                destin << "\t\t\t" << "clken("<< 1 << ")<='0';"<< endl;
-                break;
-
-            default:
-                destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
-                destin << "\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
-                break;
-        }*/
-
-     
-
 
         int st0_row = -1, st0_col = -1;
-    for (int row = 0; row < cfsm.size(); ++row) {
-    for (int col = 0; col < cfsm[row].size(); ++col) {
-        if (cfsm[row][col] == "st0") {
-            st0_row = row;
-            st0_col = col;
-            break;
-        }
-    }
-    if (st0_row != -1) break; // Stop searching if "st0" is found
-    }
-
-switch (j) {
-    case 0:
-        if (st0_row == 0) {
-            // st0 is in cfsm[0], use cfsm[0][0]
-            destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] << ";" << endl;
-            destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
-        } else if (st0_row == 1) {
-            // st0 is in cfsm[1], use st0_wait
-            destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
-            destin << "\t\t\t" << "clken(" << 1 << ")<='1';" << endl;
-        }
-        break;
-
-    default:
-        if (st0_row == 1 && j == 1) {
-            // Assign correct state if st0 is in cfsm[1] and j is 1
-            destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[1][0] << ";" << endl;
-            destin << "\t\t\t" << "clken(" << 0 << ")<='0';" << endl;
-        } else {
-            // Default case for other situations
-            destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
-            destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
-        }
-        break;
-}
-
-        /*if ((j != find_cfsm("st0")) && (CfsmAmount != 1))
-            destin << "\t\t\t" << "z(0)" << " := '1';" << endl;*/
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Thisisit
-        destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl << endl;
-        /*if (CfsmAmount != 1){
-            if (j >= 0 && j < cfsm.size())
+        for (int row = 0; row < cfsm.size(); ++row)
+        {
+            for (int col = 0; col < cfsm[row].size(); ++col)
             {
-                for (const string &state : cfsm[1 - j])
+                if (cfsm[row][col] == "st0")
                 {
-                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
-                    destin << "\t\tz(" << stateNumber << ") := '0';" << endl;
+                    st0_row = row;
+                    st0_col = col;
+                    break;
                 }
             }
-        }*/
+            if (st0_row != -1)
+                break; // Stop searching if "st0" is found
+        }
+
+        switch (j)
+        {
+        case 0:
+            if (st0_row == 0)
+            {
+                // st0 is in cfsm[0], use cfsm[0][0]
+                destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[0][0] << ";" << endl;
+                destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
+            }
+            else if (st0_row == 1)
+            {
+                // st0 is in cfsm[1], use st0_wait
+                destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+                destin << "\t\t\t" << "clken(" << 1 << ")<='1';" << endl;
+            }
+            break;
+
+        default:
+            if (st0_row == 1 && j == 1)
+            {
+                // Assign correct state if st0 is in cfsm[1] and j is 1
+                destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[1][0] << ";" << endl;
+                destin << "\t\t\t" << "clken(" << 0 << ")<='0';" << endl;
+            }
+            else
+            {
+                // Default case for other situations
+                destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
+                destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
+            }
+            break;
+        }
+
+        destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl
+               << endl;
 
         source.clear();
         source.seekg(0, ios::beg); // Return to the beginning of the file
 
-        FSM2Process(j, destin,CfsmAmount); // Create the vhdl process for the current cfsm
+        FSM2Process(j, destin, CfsmAmount); // Create the vhdl process for the current cfsm
 
         destin << "\t\t" << "end if;" << endl;
-        if (CfsmAmount != 1){
-            /*if (j >= 0 && j < cfsm.size())
-            {
-                int otherCfsmIndex = (j == 0) ? 1 : 0; // Determine the other CFSM index
-                destin << "\tclken(" << otherCfsmIndex << ") <= ";
-                for (size_t i = 0; i < cfsm[otherCfsmIndex].size(); ++i)
-                {
-                    int stateNumber = stoi(cfsm[otherCfsmIndex][i].substr(2)); // Extract the number from the state string
-                    destin << "z(" << stateNumber << ")";
-                    if (i < cfsm[otherCfsmIndex].size() - 1)
-                        destin << " or ";
-                    else
-                        destin << ";" << endl;
-                }
-            }*/
+        if (CfsmAmount != 1)
             destin << "\t" << "sig_y" << j << " <= y" << j << ";" << endl;
-        }
         destin << "\t" << "end process cfsm" << j << ";\n\n";
     }
     if (CfsmAmount != 1)
-        destin << "\ty <= sig_y0 or sig_y1;" << endl << endl;
-    
+        destin << "\ty <= sig_y0 or sig_y1;" << endl
+               << endl;
+
     destin << "end arc_state_machine;" << endl;
     return 0;
 }
@@ -432,14 +408,14 @@ switch (j) {
 void MakeIODecleration(ifstream &source, ofstream &destin)
 {
     string line;
-    
+
     while (getline(source, line))
     {
         size_t i_pos = line.find(".i ");
         size_t o_pos = line.find(".o ");
         size_t p_pos = line.find(".p ");
         size_t s_pos = line.find(".s ");
-        
+
         // Handle ".i" case
         if (i_pos != string::npos)
         {
@@ -483,58 +459,63 @@ void MakeIODecleration(ifstream &source, ofstream &destin)
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-    void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm) {
-        ostringstream type_state;
-        int CfsmAmount = cfsm.size();
-        int states=0;
-        
-        for (const auto &v : cfsm) {
-            states += v.size();
-        }
+void MakeTypeState(ifstream &source, ofstream &destin, const vector<vector<string>> &cfsm)
+{
+    ostringstream type_state;
+    int CfsmAmount = cfsm.size();
+    int states = 0;
 
-        // First part: type state_0
-        type_state << "\ntype state_0 is (";
-        for (int i = 0; i < cfsm[CfsmAmount - 2].size(); ++i) {
-            type_state << cfsm[CfsmAmount - 2][i];
-            if (i < cfsm[CfsmAmount - 2].size() - 1)
-                type_state << ", ";
-        }
-        type_state << ", st0_wait);" << endl;
-
-
-        // Second part: type state_1
-        type_state << "type state_1 is (";
-        for (int i = 0; i < cfsm[CfsmAmount - 1].size(); ++i) {
-            type_state << cfsm[CfsmAmount - 1][i];
-            if (i < cfsm[CfsmAmount - 1].size() - 1)
-                type_state << ", ";
-        }
-        type_state << ", st1_wait);" << endl;
-        state_decleration = type_state.str();
-
-        // Adding signals
-        type_state << "signal s0 : state_0;" << endl;
-        type_state << "signal s1 : state_1;" << endl;
-
-        // Adding shared variables
-        for (int i = 0; i < CfsmAmount; ++i) {
-            type_state << "shared variable y" << i << ": std_logic_vector(y'range) := (others => '0');" << endl;
-            type_state << "signal sig_y" << i << ": std_logic_vector(y'range);" << endl;
-        }
-        type_state << "signal z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n" << endl;
-        
-        /*
-        int lower_bound = 0;
-        for (int i = 0; i < CfsmAmount; ++i) {
-            int upper_bound = lower_bound + cfsm[i].size() - 1;
-            type_state << "alias z" << i << " : std_logic_vector(" << upper_bound << " downto " << lower_bound << ") is z(" 
-            << upper_bound << " downto " << lower_bound << ");" << endl;
-            lower_bound = upper_bound + 1;
-        }*/
-
-        // Writing to the destination
-        destin << "\t" << type_state.str();
+    for (const auto &v : cfsm)
+    {
+        states += v.size();
     }
+
+    // First part: type state_0
+    type_state << "\ntype state_0 is (";
+    for (int i = 0; i < cfsm[CfsmAmount - 2].size(); ++i)
+    {
+        type_state << cfsm[CfsmAmount - 2][i];
+        if (i < cfsm[CfsmAmount - 2].size() - 1)
+            type_state << ", ";
+    }
+    type_state << ", st0_wait);" << endl;
+
+    // Second part: type state_1
+    type_state << "type state_1 is (";
+    for (int i = 0; i < cfsm[CfsmAmount - 1].size(); ++i)
+    {
+        type_state << cfsm[CfsmAmount - 1][i];
+        if (i < cfsm[CfsmAmount - 1].size() - 1)
+            type_state << ", ";
+    }
+    type_state << ", st1_wait);" << endl;
+    state_decleration = type_state.str();
+
+    // Adding signals
+    type_state << "signal s0 : state_0;" << endl;
+    type_state << "signal s1 : state_1;" << endl;
+
+    // Adding shared variables
+    for (int i = 0; i < CfsmAmount; ++i)
+    {
+        type_state << "shared variable y" << i << ": std_logic_vector(y'range) := (others => '0');" << endl;
+        type_state << "signal sig_y" << i << ": std_logic_vector(y'range);" << endl;
+    }
+    type_state << "signal z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n"
+               << endl;
+
+    /*
+    int lower_bound = 0;
+    for (int i = 0; i < CfsmAmount; ++i) {
+        int upper_bound = lower_bound + cfsm[i].size() - 1;
+        type_state << "alias z" << i << " : std_logic_vector(" << upper_bound << " downto " << lower_bound << ") is z("
+        << upper_bound << " downto " << lower_bound << ");" << endl;
+        lower_bound = upper_bound + 1;
+    }*/
+
+    // Writing to the destination
+    destin << "\t" << type_state.str();
+}
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -542,25 +523,25 @@ void MakeTypeState2(ifstream &source, ofstream &dest) // Write the values of the
 {
     if (source.is_open() && dest.is_open())
     {
-            type_state << "\t" << "type state is (";
-            for (int i = 0; i < states; ++i)
-            {
-                type_state << State_list[i];
-                if (i < states - 1)
-                    type_state << ", ";
-            }
-
-            type_state << ");" << endl;
-            dest << type_state.str();
-
-            // Write signal declaration
-            dest << "\tsignal s0 : state;" << endl;
+        type_state << "\t" << "type state is (";
+        for (int i = 0; i < states; ++i)
+        {
+            type_state << State_list[i];
+            if (i < states - 1)
+                type_state << ", ";
         }
+
+        type_state << ");" << endl;
+        dest << type_state.str();
+
+        // Write signal declaration
+        dest << "\tsignal s0 : state;" << endl;
     }
+}
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void FSM2Process(int j, ofstream &destin,int CfsmAmount)
+void FSM2Process(int j, ofstream &destin, int CfsmAmount)
 {
     destin << "\t\t\t" << "case s" << j << " is" << endl;
     for (int i = 0; i < cfsm[j].size(); i++) // Iterate over all the states of this specific cfsm
@@ -581,20 +562,20 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
                     string modified_y = stateProducts[k].y;
                     replace(modified_y.begin(), modified_y.end(), '-', OutputBitReplace);
                     destin << "\t\t\t\t\t\t\t" << "y" << j << " := \"" << modified_y << "\";" << endl;
-                    
+
                     if (!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                     {
                         int nextStateNumber = stoi(stateProducts[k].ns.substr(2));
-                        destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st"<<j<<"_wait;" << endl;
+                        destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st" << j << "_wait;" << endl;
                         destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") <= '1';" << endl; // z(ns) = 1
-                        destin << "\t\t\t\t\t\t\t" << "clken("<< find_cfsm(stateProducts[k].ns) << ")<='1';"<< endl;
+                        destin << "\t\t\t\t\t\t\t" << "clken(" << find_cfsm(stateProducts[k].ns) << ")<='1';" << endl;
                     }
                 }
             }
         }
         else
         {
-            for (int k = 0; k <= int( (stateProducts.size()/2)-1); k++) // Iterate over all the state_products
+            for (int k = 0; k <= int((stateProducts.size() / 2) - 1); k++) // Iterate over all the state_products
             {
                 if (stateProducts[k].cs == cfsm[j][i]) // If the current state_product is in the current state
                 {
@@ -610,9 +591,8 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
                     if (!isStringInVector(stateProducts[k].ns, cfsm[j])) // If the next state is not in the current cfsm
                     {
                         int nextStateNumber = stoi(stateProducts[k].ns.substr(2));
-                        destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st"<<j<<"_wait;" << endl;
+                        destin << "\t\t\t\t\t\t\t" << "s" << j << " <= st" << j << "_wait;" << endl;
                         destin << "\t\t\t\t\t\t\t" << "z(" << nextStateNumber << ") := '1';" << endl; // z(ns) = 1
-
                     }
                 }
             }
@@ -620,47 +600,47 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
 
         destin << "\t\t\t\t\t\t" << "when others => NULL;" << endl;
         destin << "\t\t\t\t\t" << "end case?;\n\n";
-
     }
-    if (CfsmAmount != 1){
-        destin << "\t\t\t\t" << "when st"<<j<<"_wait=>" << endl;
+    if (CfsmAmount != 1)
+    {
+        destin << "\t\t\t\t" << "when st" << j << "_wait=>" << endl;
         destin << "\t\t\t\t\t" << "y" << j << " := (others => '0');" << endl;
-        if (j == 0){
-        destin << "\t\t\t\t\t" << "clken("<< j+1 << ")<='0';"<< endl;
-        //destin << "\t\t\t\t\tz1 <= z1;"<< endl;
-
-         if (CfsmAmount != 1){
-            if (j >= 0 && j < cfsm.size())
+        if (j == 0)
+        {
+            destin << "\t\t\t\t\t" << "clken(" << j + 1 << ")<='0';" << endl;
+            if (CfsmAmount != 1)
             {
-                for (const string &state : cfsm[1 - j])
+                if (j >= 0 && j < cfsm.size())
                 {
-                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
-                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= z(" << stateNumber << ");" << endl;
+                    for (const string &state : cfsm[1 - j])
+                    {
+                        int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                        destin << "\t\t\t\t\tz(" << stateNumber << ") <= z(" << stateNumber << ");" << endl;
+                    }
+                }
+            }
+        }
+        else if (j == 1)
+        {
+            destin << "\t\t\t\t\t" << "clken(" << 0 << ")<='0';" << endl;
+            if (CfsmAmount != 1)
+            {
+                if (j >= 0 && j < cfsm.size())
+                {
+                    for (const string &state : cfsm[1 - j])
+                    {
+                        int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                        destin << "\t\t\t\t\tz(" << stateNumber << ") <= z(" << stateNumber << ");" << endl;
+                    }
                 }
             }
         }
 
-        }
-        else if (j==1){
-            destin << "\t\t\t\t\t" << "clken("<< 0 << ")<='0';"<< endl;
-           // destin << "\t\t\t\t\tz0 <= z0;"<< endl;
-
-            if (CfsmAmount != 1){
-            if (j >= 0 && j < cfsm.size())
-            {
-                for (const string &state : cfsm[1 - j])
-                {
-                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
-                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= z(" << stateNumber << ");" << endl;
-                }
-            }
-        }
-
-        }
-
-        if (j >= 0 && j < cfsm.size()) {
+        if (j >= 0 && j < cfsm.size())
+        {
             destin << "\t\t\t\t\tif ";
-            for (size_t i = 0; i < cfsm[j].size(); ++i) {
+            for (size_t i = 0; i < cfsm[j].size(); ++i)
+            {
                 int stateNumber = stoi(cfsm[j][i].substr(2)); // Extract the number from the state string
                 if (i == 0)
                     destin << "(z(" << stateNumber << ")='1') then" << endl;
@@ -672,42 +652,41 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
             destin << "\t\t\t\t\telse" << endl;
             destin << "\t\t\t\t\ts" << j << " <= st" << j << "_wait;" << endl;
 
-             if (j == 0){
-        destin << "\t\t\t\t\t" << "clken("<< j+1 << ")<='1';"<< endl;
-       
-       
-        if (CfsmAmount != 1){
-            if (j >= 0 && j < cfsm.size())
+            if (j == 0)
             {
-                for (const string &state : cfsm[1 - j])
+                destin << "\t\t\t\t\t" << "clken(" << j + 1 << ")<='1';" << endl;
+                if (CfsmAmount != 1)
                 {
-                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
-                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= '0';" << endl;
+                    if (j >= 0 && j < cfsm.size())
+                    {
+                        for (const string &state : cfsm[1 - j])
+                        {
+                            int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                            destin << "\t\t\t\t\tz(" << stateNumber << ") <= '0';" << endl;
+                        }
+                    }
                 }
             }
-        }
-
-        }
-        else if (j==1){
-            destin << "\t\t\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
-           
-
-            if (CfsmAmount != 1){
-            if (j >= 0 && j < cfsm.size())
+            else if (j == 1)
             {
-                for (const string &state : cfsm[1 - j])
+                destin << "\t\t\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
+                if (CfsmAmount != 1)
                 {
-                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
-                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= '0';" << endl;
+                    if (j >= 0 && j < cfsm.size())
+                    {
+                        for (const string &state : cfsm[1 - j])
+                        {
+                            int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                            destin << "\t\t\t\t\tz(" << stateNumber << ") <= '0';" << endl;
+                        }
+                    }
                 }
             }
-        }
-
-        }
             destin << "\t\t\t\t\tend if;" << endl;
         }
     }
-    destin << "\t\t\t\t" << "when others => NULL;\n" << endl;
+    destin << "\t\t\t\t" << "when others => NULL;\n"
+           << endl;
     destin << "\t\t\t" << "end case;" << endl;
 }
 
@@ -786,7 +765,7 @@ void Fill_state_product(ifstream &source, ofstream &destin)
         else
             sp.ns = stateMap[sp.ns];
         // Add the state_product instance to the vector
-        stateProducts.push_back(sp);        
+        stateProducts.push_back(sp);
     }
 }
 
@@ -803,7 +782,7 @@ int find_cfsm(string state) // function to find which cfsm the state belongs to
 {
     for (int i = 0; i < cfsm.size(); i++)
         if (isStringInVector(state, cfsm[i]))
-            return i;      
+            return i;
     cerr << "Error: state not found in any cfsm" << endl;
     return -1;
 }
@@ -838,11 +817,9 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
         Copy the content of the template files to the new files
         Replace the symbols in the new files with the appropriate values */
 
-
     // Change operation based on the number of cfsm (optimised or not)
-    string dir_select  = (num_clocks == 1) ? NewLocation2 : NewLocation;
+    string dir_select = (num_clocks == 1) ? NewLocation2 : NewLocation;
     string file_select = (num_clocks == 1) ? "_not_optimised" : "";
-
 
     // copy-paste the PLL file:
     ifstream PLLFile(templateFolder + "\\PLL_altpll.vhd");
@@ -857,15 +834,14 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
 
     // Copy the content of the file
     PLLCopy << PLLFile.rdbuf();
-    
-    
+
     // Open the template files for read
-    ifstream VcdDoTemplate      (templateFolder + "\\vcdrun.do");
-    ifstream CompileDoTemplate  (templateFolder + "\\compile.do");
-    ifstream TbTemplate         (templateFolder + "\\tb_state_machine" + file_select + ".vhd");
-    ifstream PackTemplate       (templateFolder + "\\tb_package_state_machine" + file_select + ".vhd");
-    ifstream TopTemplate        (templateFolder + "\\top_template.vhd");
-    ifstream TopPackTemplate    (templateFolder + "\\top_pack_template.vhd");
+    ifstream VcdDoTemplate(templateFolder + "\\vcdrun.do");
+    ifstream CompileDoTemplate(templateFolder + "\\compile.do");
+    ifstream TbTemplate(templateFolder + "\\tb_state_machine" + file_select + ".vhd");
+    ifstream PackTemplate(templateFolder + "\\tb_package_state_machine" + file_select + ".vhd");
+    ifstream TopTemplate(templateFolder + "\\top_template.vhd");
+    ifstream TopPackTemplate(templateFolder + "\\top_pack_template.vhd");
 
     // Check if the template files were opened successfully
     if (!VcdDoTemplate || !TbTemplate || !PackTemplate || !TopTemplate || !TopPackTemplate)
@@ -875,14 +851,12 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     }
 
     // Create new files in the destination folder
-    ofstream TbVhd       (dir_select + "\\tb_" +        SourceName + ".vhd");
-    ofstream TbPackageVhd(dir_select + "\\pack_tb_" +   SourceName + ".vhd");
-    ofstream VcdDoTb     (dir_select + "\\vcdrun_" +    SourceName +  ".do");
-    ofstream DoComp      (dir_select + "\\compile" +                  ".do");
-    ofstream top_vhd     (dir_select + "\\top_" +       SourceName + ".vhd");
-    ofstream top_pack    (dir_select + "\\pack_top_" +  SourceName + ".vhd");
-
-    
+    ofstream TbVhd(dir_select + "\\tb_" + SourceName + ".vhd");
+    ofstream TbPackageVhd(dir_select + "\\pack_tb_" + SourceName + ".vhd");
+    ofstream VcdDoTb(dir_select + "\\vcdrun_" + SourceName + ".do");
+    ofstream DoComp(dir_select + "\\compile" + ".do");
+    ofstream top_vhd(dir_select + "\\top_" + SourceName + ".vhd");
+    ofstream top_pack(dir_select + "\\pack_top_" + SourceName + ".vhd");
 
     // Check if the new files were created successfully
     if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack || !DoComp)
@@ -903,27 +877,29 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     }
 
     // Replace the symbols in the new files with the appropriate values
-    ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$", "@"}, {SourceName, vcdRunTime});
+    ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$"}, {SourceName});
     ReplaceSymbolsInNewFile(CompileDoTemplate, DoComp, {"%"}, {SourceName});
-    
+
     ReplaceSymbolsInNewFile(TbTemplate, TbVhd, {"$"}, {SourceName});
-    
-    if (num_clocks == 1){
-        ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, type_state.str(), to_string(newarr1.size()-1), "\0"},
-                            "?q", newarr1,  num_clocks);
+
+    if (num_clocks == 1)
+    {
+        ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q", "@"},
+                                {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1), clockPeriod, type_state.str(), to_string(newarr1.size() - 1), "\0", , vcdRunTime},
+                                "?q", newarr1, num_clocks);
     }
 
-    else {
-        ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q"},
-                            {SourceName, to_string(input), to_string(output), to_string(num_clocks-1), clockPeriod, state_decleration, to_string(newarr2.size()-1), "\0"},
-                            "?q", newarr2, num_clocks);
+    else
+    {
+        ReplaceSymbolsInNewFile(PackTemplate, TbPackageVhd, {"$", "?x", "?y", "?c", "?t", "?s", "?p", "?q", "@"},
+                                {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1), clockPeriod, state_decleration, to_string(newarr2.size() - 1), "\0", , vcdRunTime},
+                                "?q", newarr2, num_clocks);
     }
 
     ReplaceSymbolsInNewFile(TopTemplate, top_vhd, {"$", "?x", "?y", "?c"}, {SourceName, to_string(input), to_string(output), to_string(num_clocks - 1)});
 
-    ReplaceSymbolsInNewFile(TopPackTemplate, top_pack, {"$", "?g"}, {SourceName, primitive_polynomials[input+1]});
-        
+    ReplaceSymbolsInNewFile(TopPackTemplate, top_pack, {"$", "?g"}, {SourceName, primitive_polynomials[input + 1]});
+
     // Close the files
     VcdDoTemplate.close();
     TbTemplate.close();
@@ -942,7 +918,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 /* Overload number 1*/
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements)
+void ReplaceSymbolsInNewFile(ifstream &srcfile, ofstream &dstfile, const vector<string> &symbols, const vector<string> &replacements)
 { // Replaces "symbols" with "replacements" in the file
     string line;
     size_t pos;
@@ -961,13 +937,13 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 /* Overload number 2*/
-void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<string>& symbols, const vector<string>& replacements, const string& triggerSymbol, vector<vector<string>> newarr, int num_clocks)
-{ 
+void ReplaceSymbolsInNewFile(ifstream &srcfile, ofstream &dstfile, const vector<string> &symbols, const vector<string> &replacements, const string &triggerSymbol, vector<vector<string>> newarr, int num_clocks)
+{
     string line;
     size_t pos;
     int stdig = to_string(states).length();
-    int col_widths1[] = {4, 4, 4, 15+input, 15+stdig, 15+stdig, 9+output};
-    int col_widths2[] = {4, 4, 4, 15+input, 20+stdig, 20+stdig, 20+stdig, 20+stdig, 20+stdig, 20+stdig, 9+output};
+    int col_widths1[] = {4, 4, 4, 15 + input, 15 + stdig, 15 + stdig, 9 + output};
+    int col_widths2[] = {4, 4, 4, 15 + input, 20 + stdig, 20 + stdig, 20 + stdig, 20 + stdig, 20 + stdig, 20 + stdig, 9 + output};
     int *col_widths;
     col_widths = (num_clocks == 1) ? col_widths1 : col_widths2;
     while (getline(srcfile, line))
@@ -978,19 +954,19 @@ void ReplaceSymbolsInNewFile(ifstream& srcfile, ofstream& dstfile, const vector<
             if (pos != string::npos)
             {
                 if (symbols[i] == triggerSymbol)
+                {
+                    size_t index = 0;
+                    for (const auto &row : newarr)
                     {
-                        size_t index = 0;
-                        for (const auto& row : newarr)
+                        for (size_t j = 0; j < row.size(); j++)
                         {
-                            for (size_t j = 0; j < row.size(); j++)
-                                {
-                                    dstfile << left << setw(col_widths[j]) << row[j];
-                                }
-                            if (++index < newarr.size())
-                                dstfile << "," << endl;
+                            dstfile << left << setw(col_widths[j]) << row[j];
                         }
-                        line = "";
+                        if (++index < newarr.size())
+                            dstfile << "," << endl;
                     }
+                    line = "";
+                }
                 else
                     line.replace(pos, symbols[i].length(), replacements[i]);
             }
@@ -1018,11 +994,12 @@ void Return2Beginning(ifstream &file) // Return to the beginning of the file
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-
-vector<double> calc_product_prob(const vector<state_product>& stateProducts) {
+vector<double> calc_product_prob(const vector<state_product> &stateProducts)
+{
     vector<double> probabilities;
 
-    for (const auto& product : stateProducts) {
+    for (const auto &product : stateProducts)
+    {
         int totalBits = product.x.size();
         int dontCareBits = count(product.x.begin(), product.x.end(), '-');
         int careBits = totalBits - dontCareBits;
@@ -1035,9 +1012,11 @@ vector<double> calc_product_prob(const vector<state_product>& stateProducts) {
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vector<string>& State_list, int states) {
+void calc_state_prob_V1(unordered_map<string, double> &stateProbMap, const vector<string> &State_list, int states)
+{
     double probability = 1.0 / states;
-    for (const string& state : State_list) {
+    for (const string &state : State_list)
+    {
         stateProbMap[state] = probability;
     }
 }
@@ -1045,22 +1024,27 @@ void calc_state_prob_V1(unordered_map<string, double>& stateProbMap, const vecto
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 unordered_map<string, unordered_map<string, double>> map_state_prob(
-    const vector<state_product>& stateProducts, 
-    const unordered_map<string, double>& stateProbMap,
-    const vector<double>& productProbabilities) {
-    
+    const vector<state_product> &stateProducts,
+    const unordered_map<string, double> &stateProbMap,
+    const vector<double> &productProbabilities)
+{
+
     unordered_map<string, unordered_map<string, double>> transitionProbMap;
     unordered_map<string, double> stateProb;
 
-    for (const auto& sp : stateProducts) {
+    for (const auto &sp : stateProducts)
+    {
         stateProb[sp.cs] = stateProbMap.at(sp.cs);
     }
 
-    for (const auto& si : stateProbMap) {
-        for (const auto& sj : stateProbMap) {
+    for (const auto &si : stateProbMap)
+    {
+        for (const auto &sj : stateProbMap)
+        {
             double sumProductProb = 0.0;
 
-            for (size_t k = 0; k < stateProducts.size(); ++k) {
+            for (size_t k = 0; k < stateProducts.size(); ++k)
+            {
                 if (stateProducts[k].cs == si.first && stateProducts[k].ns == sj.first)
                     sumProductProb += productProbabilities[k];
             }
@@ -1073,25 +1057,33 @@ unordered_map<string, unordered_map<string, double>> map_state_prob(
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-bool compare_pt1(const Result& a, const Result& b) {
+bool compare_pt1(const Result &a, const Result &b)
+{
     return a.pt1 < b.pt1;
 }
 
-bool compare_pt2(const Result& a, const Result& b) {
+bool compare_pt2(const Result &a, const Result &b)
+{
     return a.pt2 < b.pt2;
 }
 
-bool compare_sum_pt(const Result& a, const Result& b) {
+bool compare_sum_pt(const Result &a, const Result &b)
+{
     return a.sum_pt < b.sum_pt;
 }
 
 // Function to update the top 5 results
 template <typename Compare>
-void update_top_results(vector<Result>& results, const Result& new_result, Compare comp) {
-    if (results.size() < 5) {
+void update_top_results(vector<Result> &results, const Result &new_result, Compare comp)
+{
+    if (results.size() < 5)
+    {
         results.push_back(new_result);
-    } else {
-        if (comp(new_result, results.back())) {
+    }
+    else
+    {
+        if (comp(new_result, results.back()))
+        {
             results.back() = new_result;
         }
     }
@@ -1102,19 +1094,23 @@ void update_top_results(vector<Result>& results, const Result& new_result, Compa
 
 // Recursive function to generate combinations and find best probabilities
 void find_best_probabilities_recursive(
-    const vector<string>& state_list,
-    vector<string>& current_comb,
-    vector<string>& remaining_elements,
+    const vector<string> &state_list,
+    vector<string> &current_comb,
+    vector<string> &remaining_elements,
     size_t index,
-    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
-    vector<Result>& min_pt1_vector,
-    vector<Result>& min_pt2_vector,
-    vector<Result>& min_sum_pt_vector) {
+    const unordered_map<string, unordered_map<string, double>> &transitionProbMap,
+    vector<Result> &min_pt1_vector,
+    vector<Result> &min_pt2_vector,
+    vector<Result> &min_sum_pt_vector)
+{
 
-    if (current_comb.size() == state_list.size() / 2) {
+    if (current_comb.size() == state_list.size() / 2)
+    {
         remaining_elements.clear();
-        for (const auto& state : state_list) {
-            if (find(current_comb.begin(), current_comb.end(), state) == current_comb.end()) {
+        for (const auto &state : state_list)
+        {
+            if (find(current_comb.begin(), current_comb.end(), state) == current_comb.end())
+            {
                 remaining_elements.push_back(state);
             }
         }
@@ -1122,8 +1118,10 @@ void find_best_probabilities_recursive(
         double pt1 = 0.0;
         double pt2 = 0.0;
 
-        for (const auto& cs : current_comb) {
-            for (const auto& ns : remaining_elements) {
+        for (const auto &cs : current_comb)
+        {
+            for (const auto &ns : remaining_elements)
+            {
                 pt1 += transitionProbMap.at(cs).at(ns);
                 pt2 += transitionProbMap.at(ns).at(cs);
             }
@@ -1140,7 +1138,8 @@ void find_best_probabilities_recursive(
         return;
     }
 
-    if (index >= state_list.size()) {
+    if (index >= state_list.size())
+    {
         return;
     }
 
@@ -1156,11 +1155,12 @@ void find_best_probabilities_recursive(
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void calculate_basic_probability(
-    const vector<string>& state_list,
-    const unordered_map<string, unordered_map<string, double>>& transitionProbMap,
-    vector<Result>& min_pt1_vector,
-    vector<Result>& min_pt2_vector,
-    vector<Result>& min_sum_pt_vector) {
+    const vector<string> &state_list,
+    const unordered_map<string, unordered_map<string, double>> &transitionProbMap,
+    vector<Result> &min_pt1_vector,
+    vector<Result> &min_pt2_vector,
+    vector<Result> &min_sum_pt_vector)
+{
 
     vector<string> cfsm0(state_list.begin(), state_list.begin() + state_list.size() / 2);
     vector<string> cfsm1(state_list.begin() + state_list.size() / 2, state_list.end());
@@ -1168,8 +1168,10 @@ void calculate_basic_probability(
     double pt1 = 0.0;
     double pt2 = 0.0;
 
-    for (const auto& cs : cfsm0) {
-        for (const auto& ns : cfsm1) {
+    for (const auto &cs : cfsm0)
+    {
+        for (const auto &ns : cfsm1)
+        {
             pt1 += transitionProbMap.at(cs).at(ns);
             pt2 += transitionProbMap.at(ns).at(cs);
         }
@@ -1187,12 +1189,14 @@ void calculate_basic_probability(
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 // Function to find the best probabilities using the recursive helper
-void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>>& transitionProbMap,int CfsmAmount) {
+void find_best_probabilities(int states, const unordered_map<string, unordered_map<string, double>> &transitionProbMap, int CfsmAmount)
+{
     vector<string> state_list;
-    for (int i = 0; i < states; ++i) {
+    for (int i = 0; i < states; ++i)
+    {
         state_list.push_back("st" + to_string(i));
     }
-    
+
     vector<string> current_comb;
     vector<string> remaining_elements;
 
@@ -1253,37 +1257,44 @@ void SetWorkingDirectory() // Set the working directory to the exe location
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void Optimiser_Min_trans_prob(
-    const vector<Result>& min_pt1_vector,
-    const vector<Result>& min_pt2_vector,
-    const vector<Result>& min_sum_pt_vector,
-    vector<vector<string>>& cfsm) {
+    const vector<Result> &min_pt1_vector,
+    const vector<Result> &min_pt2_vector,
+    const vector<Result> &min_sum_pt_vector,
+    vector<vector<string>> &cfsm)
+{
 
-    const vector<Result>* vectors[] = {&min_pt1_vector, &min_pt2_vector, &min_sum_pt_vector};
+    const vector<Result> *vectors[] = {&min_pt1_vector, &min_pt2_vector, &min_sum_pt_vector};
 
     double min_score = numeric_limits<double>::max();
 
-    const Result* best_result = nullptr;
+    const Result *best_result = nullptr;
 
-    for (const auto& vec : vectors) {
-        for (const auto& res : *vec) {
+    for (const auto &vec : vectors)
+    {
+        for (const auto &res : *vec)
+        {
             double score = res.pt1 * 10 + res.pt2 * 10 + res.sum_pt;
-            if (score < min_score) {
+            if (score < min_score)
+            {
                 min_score = score;
                 best_result = &res;
             }
         }
     }
 
-    if (best_result) {
+    if (best_result)
+    {
         cfsm.push_back(best_result->cfsm0);
         cfsm.push_back(best_result->cfsm1);
     }
 
-     // Print the chosen CFSM
+    // Print the chosen CFSM
     cout << "Chosen CFSM:" << endl;
-    for (const auto& group : cfsm) {
+    for (const auto &group : cfsm)
+    {
         cout << "{ ";
-        for (const auto& state : group) {
+        for (const auto &state : group)
+        {
             cout << state << " ";
         }
         cout << "}" << endl;
@@ -1305,7 +1316,6 @@ void CreateSubFolders() // Create the necessary subfolders
     // Subfolder for the specific source
     if (!filesystem::exists(destinationFolder2 + "\\" + SourceName))
         filesystem::create_directory(destinationFolder2 + "\\" + SourceName);
-
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
