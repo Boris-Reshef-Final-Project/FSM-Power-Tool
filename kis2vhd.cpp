@@ -837,6 +837,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
 
     // Open the template files for read
     ifstream VcdDoTemplate(templateFolder + "\\vcdrun.do");
+    ifstream WaveDoTemplate(templateFolder + "\\wave.do");
     ifstream CompileDoTemplate(templateFolder + "\\compile.do");
     ifstream TbTemplate(templateFolder + "\\tb_state_machine" + file_select + ".vhd");
     ifstream PackTemplate(templateFolder + "\\tb_package_state_machine" + file_select + ".vhd");
@@ -844,7 +845,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     ifstream TopPackTemplate(templateFolder + "\\top_pack_template.vhd");
 
     // Check if the template files were opened successfully
-    if (!VcdDoTemplate || !TbTemplate || !PackTemplate || !TopTemplate || !TopPackTemplate)
+    if (!VcdDoTemplate || !TbTemplate || !PackTemplate || !TopTemplate || !TopPackTemplate || !WaveDoTemplate || !CompileDoTemplate)
     {
         cerr << "Error: Failed to open template files" << endl;
         return;
@@ -854,12 +855,15 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     ofstream TbVhd(dir_select + "\\tb_" + SourceName + ".vhd");
     ofstream TbPackageVhd(dir_select + "\\pack_tb_" + SourceName + ".vhd");
     ofstream VcdDoTb(dir_select + "\\vcdrun_" + SourceName + ".do");
+    ofstream DoWave(dir_select + "\\wave" + ".do");
     ofstream DoComp(dir_select + "\\compile" + ".do");
     ofstream top_vhd(dir_select + "\\top_" + SourceName + ".vhd");
     ofstream top_pack(dir_select + "\\pack_top_" + SourceName + ".vhd");
 
+    DoWave << WaveDoTemplate.rdbuf();
+
     // Check if the new files were created successfully
-    if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack || !DoComp)
+    if (!TbVhd || !TbPackageVhd || !VcdDoTb || !top_vhd || !top_pack || !DoComp || !DoWave)
     {
         cerr << "Error: Failed to create new test-bench files. Reason: " << strerror(errno) << endl;
         return;
@@ -902,6 +906,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
 
     // Close the files
     VcdDoTemplate.close();
+    WaveDoTemplate.close();
     TbTemplate.close();
     PackTemplate.close();
     TopTemplate.close();
@@ -910,6 +915,7 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     TbVhd.close();
     TbPackageVhd.close();
     VcdDoTb.close();
+    DoWave.close();
     top_vhd.close();
     top_pack.close();
     PLLCopy.close();

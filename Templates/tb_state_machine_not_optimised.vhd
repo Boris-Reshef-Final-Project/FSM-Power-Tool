@@ -113,11 +113,7 @@ begin
       run_time := now - start_time;
     end loop;
     done <= true;
-    report "Testbench finished" severity note;
-    assert good_lines = test_array'length
-      report "Result:  Pass=" & to_string(good_lines) & "Fail=" & to_string(test_array'length - good_lines) severity warning;
-    assert good_lines /= test_array'length
-      report "Result: All lines good." severity note;
+    report "Testbench finished." & LF & " Result: Pass=" & to_string(good_lines) & "  Fail=" & to_string(test_array'length - good_lines) severity note;
     wait;
   end process stimulus;
 

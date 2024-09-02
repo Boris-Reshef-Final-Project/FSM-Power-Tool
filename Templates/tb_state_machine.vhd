@@ -67,6 +67,7 @@ begin
     variable l          : line;
     variable k          : integer := 0;
     variable halt       : integer := 0;
+    variable fsm_match  : boolean := false;
     
     variable good_lines : integer := 0;
     variable repeat     : integer := 0;
@@ -86,34 +87,32 @@ begin
       for i in test_array'range loop
         
         if (i > 0) then
-          if (test_array(i).C_fsm /= test_array(i-1).N_fsm) then
-            
-            k := 0;
-            halt := 0;
-            wait until rising_edge(clk(0));
-
-            while ((halt = 0)) loop            
-              
-              k := k mod test_array'length;
-              wait until falling_edge(clk(0));
-              x <= test_array(k).x;
-              wait for 0 ns;
-              wait until falling_edge(clk(0));
-              k := k+1;
-              
-              if ((clken'delayed(1 ns) /= "11") and (clken(test_array(i).C_fsm) = '1')) then
-                if ((test_array(i).C_fsm = 0) and (CS_1 = test_array(i).CS_1)) then
-                  halt := 1;
-                elsif ((test_array(i).C_fsm = 1) and (CS_0 = test_array(i).CS_0)) then
-                  halt := 1;
-                else
-                  halt := 0;
-                end if;
-              end if;
-            end loop;
-            
+          fsm_match := (test_array(i).C_fsm /= test_array(i-1).N_fsm);
+        else
+          fsm_match := (test_array(0).C_fsm /= 0);
+        end if;
+        if (fsm_match) then            
+          k := 0;
+          halt := 0;
+          wait until rising_edge(clk(0));
+          while ((halt = 0)) loop
+            k := k mod test_array'length;
+            wait until falling_edge(clk(0));
+            x <= test_array(k).x;
             wait for 0 ns;
-          end if;
+            wait until falling_edge(clk(0));
+            k := k+1;
+            if ((clken'delayed(1 ns) /= "11") and (clken(test_array(i).C_fsm) = '1')) then
+              if ((test_array(i).C_fsm = 0) and (CS_1 = test_array(i).CS_1)) then
+                halt := 1;
+              elsif ((test_array(i).C_fsm = 1) and (CS_0 = test_array(i).CS_0)) then
+                halt := 1;
+              else
+                halt := 0;
+              end if;
+            end if;
+          end loop;
+          wait for 0 ns;
         end if;
         
         wait until rising_edge(clk(0));
@@ -164,11 +163,7 @@ begin
     end loop;
     
     done <= true;
-    report "Testbench finished" severity note;
-    assert good_lines = test_array'length
-      report "Result:  Pass=" & to_string(good_lines) & "Fail=" & to_string(test_array'length - good_lines) severity warning;
-    assert good_lines /= test_array'length
-      report "Result: All lines good." severity note;
+    report "Testbench finished." & LF & " Result: Pass=" & to_string(good_lines) & "  Fail=" & to_string(test_array'length - good_lines) severity note;
     wait;
 	
   end process stimulus;
