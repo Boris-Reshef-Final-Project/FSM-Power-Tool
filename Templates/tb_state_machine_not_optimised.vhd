@@ -115,7 +115,7 @@ begin
     done <= true;
     report "Testbench finished" severity note;
     assert good_lines = test_array'length
-      report "Result:  Pass=" & to_string(good_lines) & LF & "         " & "Fail=" & to_string(test_array'length) severity warning;
+      report "Result:  Pass=" & to_string(good_lines) & LF & "         " & "Fail=" & to_string(test_array'length - good_lines) severity warning;
     assert good_lines /= test_array'length
       report "Result: All lines good." severity note;
     wait;
