@@ -12,8 +12,8 @@ use cycloneive.all;
 
 entity top_$ is
     generic (
-        simulation      : boolean := false;
-        power_analyzer  : boolean := true;
+        simulation      : boolean := true;
+        power_analyzer  : boolean := false;
         baseline_power  : boolean := false;
         full_fpga       : boolean := false;
         duplicates      : integer := 100
@@ -110,10 +110,6 @@ architecture arc_top of top_$ is
                     LFSR_out <= (others => '1');
                 elsif rising_edge(clk(0)) then
                     LFSR_out <= LFSR(LFSR_out, c_polynom);
-                end if;
-                -- Prevent the LFSR from being optimized away in baseline_power mode
-                if (baseline_power) then
-                    y(x'range) <= fsm_input;
                 end if;
             end process;
         end generate GEN_LFSR;
