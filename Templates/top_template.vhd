@@ -12,8 +12,8 @@ use cycloneive.all;
 
 entity top_$ is
     generic (
-        simulation      : boolean := true;
-        power_analyzer  : boolean := false;
+        simulation      : boolean := false;
+        power_analyzer  : boolean := true;
         baseline_power  : boolean := false;
         full_fpga       : boolean := false;
         duplicates      : integer := 100
