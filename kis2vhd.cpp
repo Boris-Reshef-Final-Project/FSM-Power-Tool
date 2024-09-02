@@ -363,7 +363,7 @@ switch (j) {
         } else if (st0_row == 1) {
             // st0 is in cfsm[1], use st0_wait
             destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
-            destin << "\t\t\t" << "clken(" << 1 << ")<='0';" << endl;
+            destin << "\t\t\t" << "clken(" << 1 << ")<='1';" << endl;
         }
         break;
 
@@ -371,7 +371,7 @@ switch (j) {
         if (st0_row == 1 && j == 1) {
             // Assign correct state if st0 is in cfsm[1] and j is 1
             destin << "\t\t\t" << "s" << j << "\t<=\t" << cfsm[1][0] << ";" << endl;
-            destin << "\t\t\t" << "clken(" << 0 << ")<='1';" << endl;
+            destin << "\t\t\t" << "clken(" << 0 << ")<='0';" << endl;
         } else {
             // Default case for other situations
             destin << "\t\t\t" << "s" << j << "\t<=\tst" << j << "_wait;" << endl;
@@ -382,7 +382,7 @@ switch (j) {
 
         /*if ((j != find_cfsm("st0")) && (CfsmAmount != 1))
             destin << "\t\t\t" << "z(0)" << " := '1';" << endl;*/
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Thisisit
         destin << "\t\t" << "elsif rising_edge(clk(" << j << ")) then" << endl << endl;
         /*if (CfsmAmount != 1){
             if (j >= 0 && j < cfsm.size())
@@ -523,14 +523,14 @@ void MakeIODecleration(ifstream &source, ofstream &destin)
         }
         type_state << "signal z: std_logic_vector(" << states - 1 << " downto 0) := (others => '0');\n" << endl;
         
-
+        /*
         int lower_bound = 0;
         for (int i = 0; i < CfsmAmount; ++i) {
             int upper_bound = lower_bound + cfsm[i].size() - 1;
             type_state << "alias z" << i << " : std_logic_vector(" << upper_bound << " downto " << lower_bound << ") is z(" 
             << upper_bound << " downto " << lower_bound << ");" << endl;
             lower_bound = upper_bound + 1;
-        }
+        }*/
 
         // Writing to the destination
         destin << "\t" << type_state.str();
@@ -627,11 +627,35 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
         destin << "\t\t\t\t\t" << "y" << j << " := (others => '0');" << endl;
         if (j == 0){
         destin << "\t\t\t\t\t" << "clken("<< j+1 << ")<='0';"<< endl;
-        destin << "\t\t\t\t\tz1 <= z1;"<< endl;
+        //destin << "\t\t\t\t\tz1 <= z1;"<< endl;
+
+         if (CfsmAmount != 1){
+            if (j >= 0 && j < cfsm.size())
+            {
+                for (const string &state : cfsm[1 - j])
+                {
+                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= z(" << stateNumber << ");" << endl;
+                }
+            }
+        }
+
         }
         else if (j==1){
             destin << "\t\t\t\t\t" << "clken("<< 0 << ")<='0';"<< endl;
-            destin << "\t\t\t\t\tz0 <= z0;"<< endl;
+           // destin << "\t\t\t\t\tz0 <= z0;"<< endl;
+
+            if (CfsmAmount != 1){
+            if (j >= 0 && j < cfsm.size())
+            {
+                for (const string &state : cfsm[1 - j])
+                {
+                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= z(" << stateNumber << ");" << endl;
+                }
+            }
+        }
+
         }
 
         if (j >= 0 && j < cfsm.size()) {
@@ -646,18 +670,40 @@ void FSM2Process(int j, ofstream &destin,int CfsmAmount)
                 destin << "\t\t\t\t\t\ts" << j << " <= " << cfsm[j][i] << ";" << endl;
             }
             destin << "\t\t\t\t\telse" << endl;
-            destin << "\t\t\t\t\t\ts" << j << " <= st" << j << "_wait;" << endl;
+            destin << "\t\t\t\t\ts" << j << " <= st" << j << "_wait;" << endl;
 
              if (j == 0){
-        destin << "\t\t\t\t\t\t" << "clken("<< j+1 << ")<='1';"<< endl;
-        destin << "\t\t\t\t\t\tz1 <= (others => '0');"<< endl;
+        destin << "\t\t\t\t\t" << "clken("<< j+1 << ")<='1';"<< endl;
+       
+       
+        if (CfsmAmount != 1){
+            if (j >= 0 && j < cfsm.size())
+            {
+                for (const string &state : cfsm[1 - j])
+                {
+                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= '0';" << endl;
+                }
+            }
+        }
+
         }
         else if (j==1){
-            destin << "\t\t\t\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
-            destin << "\t\t\t\t\t\tz0 <= (others => '0');"<< endl;
-        }
-            
+            destin << "\t\t\t\t\t" << "clken("<< 0 << ")<='1';"<< endl;
+           
 
+            if (CfsmAmount != 1){
+            if (j >= 0 && j < cfsm.size())
+            {
+                for (const string &state : cfsm[1 - j])
+                {
+                    int stateNumber = stoi(state.substr(2)); // Extract the number from the state string
+                    destin << "\t\t\t\t\tz(" << stateNumber << ") <= '0';" << endl;
+                }
+            }
+        }
+
+        }
             destin << "\t\t\t\t\tend if;" << endl;
         }
     }
