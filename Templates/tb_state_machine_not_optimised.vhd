@@ -42,7 +42,7 @@ architecture arc_tb_universal of tb_$ is
   signal y    : std_logic_vector(num_outputs downto 0);
   signal done : boolean := false;
   
-  constant error_reporting : boolean := true; -- Set to true to enable error reporting for individual lines
+  constant error_reporting : integer := 1; -- 0 = off, 1 = only errors, 2 = errors and good products
 
 begin
 
@@ -91,13 +91,15 @@ begin
         wait for 0 ns;
         -- Check output
         if (repeat = 0) then
-          if (error_reporting = true) then
+          if (error_reporting /= 0) then
             assert (y = test_array(i).y)
               report "Immediate check failed at line " & integer'image(i) & ": Expected y = " & to_string(test_array(i).y) & ", Got y = " & to_string(y)
               severity warning;
             assert (CS = test_array(i).NS)
               report "State check failed at line " & integer'image(i) & ": Expected NS = " & to_string(test_array(i).NS) & ", Got NS = " & to_string(CS)
               severity warning;
+          end if;
+          if (error_reporting = 2) then
             Assert (not ((y = test_array(i).y) and (CS = test_array(i).NS)))
               report "Good product at line " & integer'image(i) 
               severity note;
