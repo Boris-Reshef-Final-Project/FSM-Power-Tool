@@ -875,13 +875,15 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     // Recieve user input for the vcdrun.do simulation run time and clock period
     static string vcdRunTime = "\0";
     static string clockPeriod = "\0";
-    if (vcdRunTime.empty() || clockPeriod.empty())
+    /*if (vcdRunTime.empty() || clockPeriod.empty())
     {
         cout << "Enter the vcd run time (with time units): ";
         getline(cin, vcdRunTime);
         cout << "Enter the clock period (with time units): ";
         getline(cin, clockPeriod);
-    }
+    }*/
+   vcdRunTime  = "10 us";
+   clockPeriod = "10 ns";
 
     // Replace the symbols in the new files with the appropriate values
     ReplaceSymbolsInNewFile(VcdDoTemplate, VcdDoTb, {"$"}, {SourceName});

@@ -23,7 +23,9 @@ entity top_$ is
         rst	    : in	std_logic := '1';
         clk	    : in    std_logic_vector(?c downto 0) := (others => '0'); -- Read COMMENT1 below.
         x		: in	std_logic_vector(?x downto 0) := (others => '0');
-        y		: out	std_logic_vector(?y downto 0)
+        y		: out	std_logic_vector(?y downto 0);
+        y_2     : out	std_logic_vector(?y downto 0);
+        clken_2 : out	std_logic_vector(?c downto 0)
     );
     -- COMMENT1: The clk input is should be only 1-bit wide, but in-order 
     -- to prevent the Quartus fitter from optimizing away one of the PLLs
@@ -51,18 +53,19 @@ architecture arc_top of top_$ is
 		end component $;
 		  
 		signal original_y	    : std_logic_vector(y'range);
-		signal dupes_y 		    : std_vec_array(duplicates-1 downto 0)(y'range);
+		signal dupes_y 		    : std_vec_array(duplicates-1 downto 0)(y'range) := (others => (others => '0'));
         signal original_clken	: std_logic_vector(clken'range);
-        signal dupes_clken	    : std_vec_array(duplicates-1 downto 0)(clk'range);
+        signal dupes_clken	    : std_vec_array(duplicates-1 downto 0)(clk'range) := (others => (others => '0'));
 
 		attribute keep 	            of dupes_y  : signal is true;
 		attribute altera_attribute  of G2       : label  is "-name PRESERVE_REGISTER on";
 		attribute dont_merge        of G2       : label  is true;
         
     begin
-	
-		y       <= original_y       or or_array(dupes_y);
-        clken   <= original_clken   or or_array(dupes_clken);
+        y       <= original_y;
+		y_2     <= original_y       or or_array(dupes_y);
+        clken   <= original_clken;
+        clken_2 <= original_clken   or or_array(dupes_clken);
 		
         -- In software: input = x, clk = clk
         -- In hardware: input = LFSR_out, clk = pll_out
@@ -100,7 +103,7 @@ architecture arc_top of top_$ is
         -- generate many FSMs to fill the area on the chip to about 30%
         -- change the value of 'duplicates' (generic) to control the amount of FSMs
         -- Used in: power_analyzer, full_fpga
-        G2: if (full_fpga or power_analyzer) generate
+        G2: if (not baseline_power) generate
             FSM_DUPES: for i in 0 to (duplicates - 1) generate
                 FSM_area_fill: $
                 generic map (a => i)

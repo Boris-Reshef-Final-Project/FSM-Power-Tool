@@ -48,7 +48,7 @@ begin
 
   -- Create instance of the device under test (DUT)
   DUT : entity work.top_$
-    generic map (simulation => true, power_analyzer => false, baseline_power => false, full_fpga => false, duplicates => 1)
+    generic map (simulation => true, power_analyzer => false, baseline_power => false, full_fpga => false, duplicates => 100)
     port    map (rst => rst, clk => clk, x => x, y => y);
 
   
