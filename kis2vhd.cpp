@@ -321,7 +321,8 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
         MakeTypeState(source, destin, cfsm);
     else if (CfsmAmount == 1)
         MakeTypeState2(source, destin);
-
+    
+    destin << "\tattribute dont_merge : boolean; attribute dont_merge of y,clken,s0 : signal is true;" << endl;
     destin << "begin" << endl << endl;
     if (CfsmAmount == 1)
         destin << "\tclken(0) <= '1';" << endl;
