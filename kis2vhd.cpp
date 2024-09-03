@@ -228,6 +228,7 @@ int KissFiles2Vhd(int CfsmAmount, ifstream &source, ofstream &destin) // Main Pa
     destin << "use ieee.std_logic_arith.all;" << endl;
     destin << "use ieee.std_logic_unsigned.all;" << endl;
     destin << "\nentity " << SourceName << " is" << endl;
+    destin << "generic(a : integer := 0);" << endl;
     destin << "port(" << endl;
     destin << "\t" << "rst\t\t: in\tstd_logic;" << endl;
     destin << "\t" << "clk\t\t: in\tstd_logic_vector(" << CfsmAmount - 1 << " downto 0);" << endl;
