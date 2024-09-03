@@ -31,7 +31,7 @@ entity top_$ is
     -- as a vector of ports of the same size as the number of PLLs. This way, the fitter
     -- will not merge the PLLs, and we will have the desired number of PLLs on the chip.
 
-end entity $;
+end entity top_$;
  
     
 architecture arc_top of top_$ is
