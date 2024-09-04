@@ -838,6 +838,16 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     // Copy the content of the file
     PLLCopy << PLLFile.rdbuf();
 
+    // copy-paste the sdc file:
+    ifstream sdcFile(templateFolder + "\\clocks.sdc");
+    ofstream sdcCopy(dir_select + "\\clocks.sdc");
+    if (!sdcFile || !sdcCopy)
+    {
+        cerr << "Error: Failed to open or create clock.sdc file" << endl;
+        return;
+    }
+    sdcCopy << sdcFile.rdbuf();
+
     // Open the template files for read
     ifstream VcdDoTemplate(templateFolder + "\\vcdrun.do");
     ifstream WaveDoTemplate(templateFolder + "\\wave.do");
@@ -924,6 +934,8 @@ void Use_Templates(int num_clocks) // Copy and use the template files to create 
     top_vhd.close();
     top_pack.close();
     PLLCopy.close();
+    sdcFile.close();
+    sdcCopy.close();
 }
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------------------*/
